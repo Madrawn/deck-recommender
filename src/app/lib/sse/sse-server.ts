@@ -23,9 +23,9 @@ export class SseStream<T> {
   async sendError (error: Error): Promise<void> {
     await this.send({
       type: 'error',
-      message: error.message,
+      data: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    } as any)
+    } as unknown as T)
   }
 
   createResponse (): NextResponse {

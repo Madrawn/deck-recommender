@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import SSEClientError from './SSEClientError'
 
 type EventStreamOptions = {
   onError?: (error: Error) => void
@@ -28,23 +29,18 @@ export async function doEventStream<T> (
   }
 
   eventSource.onerror = event => {
-    const error = new Error('EventSource error:')
+    const error = new SSEClientError('EventSource error:')
 
     // Add diagnostic information
     error.name = 'EventStreamError'
     error.message = `Connection state: ${eventSource.readyState}`
 
     // Capture URL and status if available
-    const statusMap = {
-      0: 'CONNECTING',
-      1: 'OPEN',
-      2: 'CLOSED'
-    }
+    const statusMap = ['CONNECTING', 'OPEN', 'CLOSED']
 
     error.details = {
       url: eventSource.url,
       readyState: statusMap[eventSource.readyState],
-      lastEventId: event.lastEventId,
       isTrusted: event.isTrusted
     }
 
