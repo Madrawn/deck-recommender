@@ -203,7 +203,7 @@ ${cardLines
         const isRarityPrefix = item?.[0].startsWith('Rarity')
         return hasTwoElements && isRarityPrefix
       })[0]
-    const rarity = extractedRarityInfo?.[1].trim()
+    const rarity = extractedRarityInfo?.[1].trim() ?? ''
 
     // Extract other stats from the main aside section
     const mainSection = doc.querySelector(
