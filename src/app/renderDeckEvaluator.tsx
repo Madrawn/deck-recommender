@@ -1,20 +1,35 @@
 import { UIMessage } from "ai";
 import { Card as HsCard } from "./api/promptGen";
 import Markdown from "react-markdown";
-export default function renderDeckEvaluator(
-  deckCode: string,
-  handleOpenModal: () => void,
-  cards: { promptString: string; enrichedCards: HsCard[] },
-  isParsing: boolean,
-  messages: UIMessage[],
-  status: string,
-  error: Error | undefined,
-  isModalOpen: boolean,
-  handleCloseModal: () => void,
-  handleDeckCodeChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void,
-  errorMessage: string,
-  handleSubmit: () => Promise<void>
-) {
+import { deckCodeInputModal } from "./deckCodeInputModal";
+export default function renderDeckEvaluator(props: {
+  deckState: {
+    deckCode: string;
+    isParsing: boolean;
+    errorMessage: string;
+    deckAnalysis: HsCard[];
+  };
+  chatState: {
+    messages: UIMessage[];
+    status: "error" | "submitted" | "streaming" | "ready";
+    error: Error | undefined;
+  };
+  modalState: {
+    isModalOpen: boolean;
+    handleCloseModal: () => void;
+    handleOpenModal: () => void;
+  };
+  userRequestState: {
+    userRequest: string;
+    handleUserRequestChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  };
+  handlers: {
+    handleDeckCodeChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+    handleSubmit: () => Promise<void>;
+  };
+}) {
+  const { deckState, chatState, modalState, userRequestState, handlers } =
+    props;
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-6xl mx-auto">
@@ -26,7 +41,7 @@ export default function renderDeckEvaluator(
           </p>
         </header>
 
-        {!deckCode ? (
+        {!deckState.deckCode ? (
           <div className="bg-white p-8 rounded-lg shadow-md text-center">
             <h2 className="text-2xl font-bold mb-4">Evaluate Your Deck</h2>
             <p className="mb-6 text-gray-600">
@@ -34,26 +49,26 @@ export default function renderDeckEvaluator(
               recommendations
             </p>
             <button
-              onClick={handleOpenModal}
+              onClick={modalState.handleOpenModal}
               className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
             >
               Paste Deck Code
             </button>
           </div>
-        ) : isParsing ? (
-          renderLoadingSpinner("Analyzing your deck...")
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Deck Cards Section */}
             <div className="bg-white p-6 rounded-lg shadow-md col-span-1">
               <h2 className="text-xl font-bold mb-4 border-b pb-2">
-                Your Deck ({cards.enrichedCards.length} cards)
+                Your Deck ({deckState.deckAnalysis.length} cards)
               </h2>
               <div className="flex flex-wrap justify-center gap-2">
-                {cards.enrichedCards.map((card) => renderCardPlaceholder(card))}
+                {deckState.deckAnalysis.map((card) =>
+                  renderCardPlaceholder(card)
+                )}
               </div>
               <button
-                onClick={handleOpenModal}
+                onClick={modalState.handleOpenModal}
                 className="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 w-full"
               >
                 Change Deck
@@ -62,10 +77,10 @@ export default function renderDeckEvaluator(
 
             {/* Evaluation Section */}
             <div className="bg-white p-6 rounded-lg shadow-md col-span-1 lg:col-span-2">
-              {messages ? (
+              {chatState.messages ? (
                 <>
                   <h2 className="text-xl font-bold mb-4 border-b pb-2">
-                    AI Evaluations {status}
+                    AI Evaluations {chatState.status}
                   </h2>
                   <div className="mb-6">
                     <h3 className="font-semibold text-lg mb-2">Analysis</h3>
@@ -75,44 +90,46 @@ export default function renderDeckEvaluator(
                       <pre>{JSON.stringify(messages, null, 2)}</pre> 
                     </div>*/}
                   </div>
-                  {messages
-                    .filter((message) => message.role !== "user")
-                    .map((message) => (
-                      <div key={message.id}>
-                        <h3 className="font-semibold text-lg mb-2">
-                          {message.role === "user" ? "User: " : "AI: "}
-                        </h3>
-                        {message.parts.map((part, index) => {
-                          // text parts:
-                          if (part.type === "text") {
-                            return (
-                              <p
-                                className="whitespace-break-spaces"
-                                key={index}
-                              >
-                                <h3 className="font-semibold text-lg mb-2">
-                                  Response:
-                                </h3>
-                                <Markdown>{part.text}</Markdown>
-                              </p>
-                            );
-                          }
+                  {deckState.isParsing || chatState.status === "submitted"
+                    ? renderLoadingSpinner("Analyzing your deck...")
+                    : chatState.messages
+                        .filter((message) => message.role !== "user")
+                        .map((message) => (
+                          <div key={message.id}>
+                            <h3 className="font-semibold text-lg mb-2">
+                              {message.role === "user" ? "User: " : "AI: "}
+                            </h3>
+                            {message.parts.map((part, index) => {
+                              // text parts:
+                              if (part.type === "text") {
+                                return (
+                                  <p
+                                    className="whitespace-break-spaces"
+                                    key={index}
+                                  >
+                                    <h3 className="font-semibold text-lg mb-2">
+                                      Response:
+                                    </h3>
+                                    <Markdown>{part.text}</Markdown>
+                                  </p>
+                                );
+                              }
 
-                          // reasoning parts:
-                          if (part.type === "reasoning") {
-                            return (
-                              <pre key={index} className="text-wrap">
-                                {part.details.map((detail) =>
-                                  detail.type === "text"
-                                    ? detail.text
-                                    : "<redacted>"
-                                )}
-                              </pre>
-                            );
-                          }
-                        })}
-                      </div>
-                    ))}
+                              // reasoning parts:
+                              if (part.type === "reasoning") {
+                                return (
+                                  <pre key={index} className="text-wrap">
+                                    {part.details.map((detail) =>
+                                      detail.type === "text"
+                                        ? detail.text
+                                        : "<redacted>"
+                                    )}
+                                  </pre>
+                                );
+                              }
+                            })}
+                          </div>
+                        ))}
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-64 text-gray-500">
@@ -125,68 +142,13 @@ export default function renderDeckEvaluator(
       </div>
 
       {/* Modal for deck code input */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Enter Deck Code</h3>
-                <button
-                  onClick={handleCloseModal}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              <p className="mb-4 text-gray-600">
-                Paste your Hearthstone deck code below. You can copy this from
-                the Hearthstone client.
-              </p>
-
-              <textarea
-                value={deckCode}
-                onChange={handleDeckCodeChange}
-                className="w-full h-48 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                placeholder="### Deck Name&#10;# Class: ...&#10;# Format: ...&#10;#&#10;# 2x (1) Card Name&#10;# ...&#10;#&#10;AAEC..."
-              ></textarea>
-
-              {errorMessage && (
-                <p className="text-red-500 mt-2">{errorMessage}</p>
-              )}
-
-              <div className="flex justify-end gap-4 mt-4">
-                <button
-                  onClick={handleCloseModal}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition duration-200"
-                  disabled={isParsing}
-                >
-                  {isParsing ? "Processing..." : "Evaluate Deck"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {modalState.isModalOpen &&
+        deckCodeInputModal({
+          modalState,
+          deckState,
+          userRequestState,
+          handlers,
+        })}
     </div>
   );
 }

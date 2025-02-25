@@ -1,8 +1,9 @@
 "use client";
 import { useCallback, useState, useEffect } from "react";
-import generatePromptFromDeckString, { Card as HsCard } from "./api/promptGen";
-import { useChat } from "@ai-sdk/react";
+import { DeckStreamResult, Card as HsCard } from "./api/promptGen";
 import renderDeckEvaluator from "./renderDeckEvaluator";
+import useDeckChat from "./deckChatService";
+import { doEventStream } from "./lib/sse/sse-client";
 
 const HearthstoneDeckEvaluator = () => {
   // UI states
@@ -12,30 +13,21 @@ const HearthstoneDeckEvaluator = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   // Deck data
-  const [cards, setCards] = useState<{
-    promptString: string;
-    enrichedCards: HsCard[];
-  }>({
-    promptString: "",
-    enrichedCards: [],
-  });
+  const [deckAnalysis, setDeckAnalysis] = useState<HsCard[]>([]);
+  const [promptInput, setPromptInput] = useState("");
+  const [userRequest, setUserRequest] = useState(
+    "Can you evaluate this deck and suggest improvements?"
+  );
 
   // Chat API
   const {
     messages,
-    setMessages,
+    resetChat,
     setInput,
     error,
     handleSubmit: handleChatSubmit,
     status,
-  } = useChat({
-    onError: (error) => {
-      console.error(error);
-      setErrorMessage(
-        "Error from chat API: " + (error.message || "Unknown error")
-      );
-    },
-  });
+  } = useDeckChat();
 
   // Modal handlers
   const handleOpenModal = () => setIsModalOpen(true);
@@ -43,14 +35,23 @@ const HearthstoneDeckEvaluator = () => {
   const handleDeckCodeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setDeckCode(e.target.value);
   };
+
+  const handleError = useCallback((error: unknown, context: string) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`${context}:`, message);
+    setErrorMessage(`${context}: ${message}`);
+  }, []);
   // Process deck code and submit to LLM
+  useEffect(() => {
+    if (status === "ready") resetChat();
+  }, [resetChat, status]);
 
   useEffect(() => {
-    if (cards.promptString) {
+    if (promptInput) {
       handleChatSubmit();
       console.log("Deck evaluation running...");
     }
-  }, [cards.promptString, handleChatSubmit]);
+  }, [promptInput, handleChatSubmit]);
 
   const handleSubmit = useCallback(async () => {
     if (!deckCode.trim()) {
@@ -60,50 +61,63 @@ const HearthstoneDeckEvaluator = () => {
 
     setIsParsing(true);
     setErrorMessage("");
-
-    try {
-      // Close modal first
-      handleCloseModal();
-
-      // Parse deck code
-      console.log("Fetching cards from deck code...");
-      const cardPrompt = await generatePromptFromDeckString(deckCode);
-
-      if (!cardPrompt || cardPrompt.enrichedCards.length === 0) {
-        setErrorMessage("Invalid deck code or no cards found");
-        return;
-      }
-
-      // Update cards state for UI
-      setCards(cardPrompt);
-
-      // Reset chat history
-      setMessages([]);
-
-      // Set the input and submit
-      setInput(cardPrompt.promptString);
-    } catch (err) {
-      console.error(err);
-      setErrorMessage("An error occurred while evaluating the deck");
-    } finally {
-      setIsParsing(false);
+    function handleStreamError(): ((error: Error) => void) | undefined {
+      return (error) => {
+        handleError(error, "Deck evaluation stream failed");
+        setIsParsing(false);
+      };
     }
-  }, [deckCode, handleChatSubmit, setInput, setMessages]);
+    const encodedDeck = btoa(deckCode);
+    const closeStream = await doEventStream<DeckStreamResult>(
+      `/api/deck-eval?d=${encodedDeck}`,
+      (event) => {
+        switch (event.type) {
+          case "card":
+            setDeckAnalysis((prev) => [...prev, event.data]);
+            break;
+          case "error":
+            console.error(`Error processing ${event.cardName}:`, event.error);
+            break;
+          case "complete":
+            setPromptInput(event.data.promptString);
+            setInput(event.data.promptString);
+            closeStream?.();
+            break;
+        }
+      },
+      {
+        onError: handleStreamError(),
+        onComplete: () => setIsParsing(false),
+      }
+    );
+  }, [deckCode, handleError, setInput]);
 
-  return renderDeckEvaluator(
-    deckCode,
-    handleOpenModal,
-    cards,
-    isParsing,
-    messages,
-    status,
-    error,
-    isModalOpen,
-    handleCloseModal,
-    handleDeckCodeChange,
-    errorMessage,
-    handleSubmit
-  );
+  return renderDeckEvaluator({
+    deckState: {
+      deckCode,
+      isParsing,
+      errorMessage,
+      deckAnalysis,
+    },
+    chatState: {
+      messages,
+      status,
+      error,
+    },
+    modalState: {
+      isModalOpen,
+      handleCloseModal,
+      handleOpenModal,
+    },
+    userRequestState: {
+      userRequest,
+      handleUserRequestChange: (e) => setUserRequest(e.target.value),
+    },
+    handlers: {
+      handleDeckCodeChange,
+      handleSubmit,
+    },
+  });
 };
 
 export default HearthstoneDeckEvaluator;
