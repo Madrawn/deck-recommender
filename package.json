@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "set DEEPSEEK_API_KEY=**redacted** && next dev",
+    "dev": "next dev",
     "build": "pnpm install && next build",
     "start": "next start",
     "lint": "next lint"
