@@ -72,13 +72,6 @@ npm run dev
 - `app/lib/sse`: Custom SSE utilities
 - `app/promptGen.ts`: Card data processing and prompt generation
 
-## Deployment
-
-Vercel is configured for zero-config deployment:
-```bash
-vercel deploy
-```
-
 ## Contributing
 
 1. Fork the repository
