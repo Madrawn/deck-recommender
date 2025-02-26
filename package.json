@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "npm install && next build",
-    "start": "npm i -g npm@10.5.0 && npm install -P && next start",
+    "start": "npm install -P && next start",
     "lint": "next lint"
   },
   "dependencies": {
