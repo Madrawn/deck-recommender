@@ -28,7 +28,7 @@ jobs:
         run: pnpm install
       - name: pnpm build
         run: |
-          pnpm run build --if-present --Production
+          pnpm run build --Production
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
