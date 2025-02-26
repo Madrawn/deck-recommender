@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "pnpm install && next build",
-    "start": "next start",
+    "start": "npm i -g pnpm@10.5.0 && pnpm install && next start",
     "lint": "next lint"
   },
   "dependencies": {
