@@ -21,14 +21,14 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: '22.x'
-      - name: Install pnpm
-        run: npm install -g pnpm@10.5.0
+          node-version: "22.x"
+      - name: Install npm
+        run: npm install -g npm@10.9.0
       - name: Install dependencies
-        run: pnpm install
-      - name: pnpm build
+        run: npm install
+      - name: npm build
         run: |
-          pnpm run build
+          npm run build
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: 'Production'
+      name: "Production"
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
@@ -51,7 +51,6 @@ jobs:
         with:
           name: node-app
 
-      
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -59,11 +58,10 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0811333F195D44DDA21FDE43949E0627 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_BFF1FADA7BD04E16A1FF08D5AE25E6E0 }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'hs-deck-recommender'
-          slot-name: 'Production'
+          app-name: "hs-deck-recommender"
+          slot-name: "Production"
           package: .
-          

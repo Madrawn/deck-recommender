@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "pnpm install && next build",
-    "start": "npm i -g pnpm@10.5.0 && pnpm install && next start",
+    "build": "npm install && next build",
+    "start": "npm i -g npm@10.5.0 && npm install -P && next start",
     "lint": "next lint"
   },
   "dependencies": {
@@ -33,6 +33,6 @@
   },
   "engines": {
     "node": "^22",
-    "pnpm": "10.5.0"
+    "npm": "10.9.0"
   }
 }
