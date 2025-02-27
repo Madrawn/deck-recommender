@@ -4,6 +4,7 @@ import Markdown from "react-markdown";
 import { deckCodeInputModal } from "./deckCodeInputModal";
 import { useState } from "react";
 import { DeckEvaluationState } from "./types";
+import version from "./version.json";
 
 type renderStateStepperProps = {
   evaluationState: DeckEvaluationState;
@@ -120,7 +121,9 @@ export default function RenderDeckEvaluator(props: DeckEvaluatorProps) {
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-6xl mx-auto">
         <header className="bg-purple-700 text-white p-6 rounded-lg shadow-lg mb-8">
-          <h1 className="text-3xl font-bold">Hearthstone Deck Evaluator</h1>
+          <h1 className="text-3xl font-bold">
+            Hearthstone Deck Evaluator {version.FullSemVer}{" "}
+          </h1>
           <p className="mt-2">
             Get AI-powered insights and recommendations for your Hearthstone
             deck
