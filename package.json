@@ -10,6 +10,7 @@
     "lint": "next lint",
     "docker:build": "docker build -t deck-recommender .",
     "docker:push": "docker image push ghcr.io/madrawn/deck-recommender:latest",
+    "docker:run": "docker run -p 3131:3131 deck-recommender",
     "docker": "npm run docker:build && npm run docker:push"
   },
   "dependencies": {
