@@ -5,18 +5,31 @@ import renderDeckEvaluator from "./renderDeckEvaluator";
 import useDeckChat from "./deckChatService";
 import { doEventStream } from "./lib/sse/sse-client";
 
+export enum DeckEvaluationState {
+  ENTER_DECK_CODE = "ENTER_DECK_CODE",
+  FETCHING_CARDS = "FETCHING_CARDS",
+  SUBMITTING = "SUBMITTING",
+  EVALUATING = "EVALUATING",
+  DONE = "DONE",
+}
+
 const HearthstoneDeckEvaluator = () => {
   // UI states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deckCode, setDeckCode] = useState("");
-  const [isParsing, setIsParsing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [manaAnalysis, setManaAnalysis] = useState<string>("");
 
   // Deck data
   const [deckAnalysis, setDeckAnalysis] = useState<HsCard[]>([]);
   const [promptInput, setPromptInput] = useState("");
   const [userRequest, setUserRequest] = useState(
     "Can you evaluate this deck and suggest improvements?"
+  );
+
+  // State tracking
+  const [evaluationState, setEvaluationState] = useState<DeckEvaluationState>(
+    DeckEvaluationState.ENTER_DECK_CODE
   );
 
   // Chat API
@@ -26,6 +39,7 @@ const HearthstoneDeckEvaluator = () => {
     setInput,
     error,
     handleSubmit: handleChatSubmit,
+    stop,
     status,
   } = useDeckChat();
 
@@ -41,10 +55,6 @@ const HearthstoneDeckEvaluator = () => {
     console.error(`${context}:`, message);
     setErrorMessage(`${context}: ${message}`);
   }, []);
-  // Process deck code and submit to LLM
-  useEffect(() => {
-    if (status === "ready") resetChat();
-  }, [resetChat, status]);
 
   useEffect(() => {
     if (promptInput) {
@@ -53,18 +63,35 @@ const HearthstoneDeckEvaluator = () => {
     }
   }, [promptInput, handleChatSubmit]);
 
+  useEffect(() => {
+    if (
+      evaluationState === DeckEvaluationState.SUBMITTING &&
+      status === "streaming"
+    ) {
+      setEvaluationState(DeckEvaluationState.EVALUATING);
+    }
+  }, [evaluationState, status]);
+  useEffect(() => {
+    if (
+      evaluationState === DeckEvaluationState.EVALUATING &&
+      status !== "streaming"
+    ) {
+      setEvaluationState(DeckEvaluationState.DONE);
+    }
+  }, [evaluationState, status]);
+
   const handleSubmit = useCallback(async () => {
     if (!deckCode.trim()) {
       setErrorMessage("Please enter a deck code");
       return;
     }
 
-    setIsParsing(true);
+    setEvaluationState(DeckEvaluationState.FETCHING_CARDS);
     setErrorMessage("");
     function handleStreamError(): ((error: Error) => void) | undefined {
       return (error) => {
         handleError(error, "Deck evaluation stream failed");
-        setIsParsing(false);
+        setEvaluationState(DeckEvaluationState.ENTER_DECK_CODE);
       };
     }
     const encodedDeck = btoa(deckCode);
@@ -79,6 +106,7 @@ const HearthstoneDeckEvaluator = () => {
             console.error(`Error processing ${event.cardName}:`, event.error);
             break;
           case "complete":
+            setManaAnalysis(event.data.manaCurveAnalysis);
             setPromptInput(event.data.promptString);
             setInput(event.data.promptString);
             closeStream?.();
@@ -87,7 +115,7 @@ const HearthstoneDeckEvaluator = () => {
       },
       {
         onError: handleStreamError(),
-        onComplete: () => setIsParsing(false),
+        onComplete: () => setEvaluationState(DeckEvaluationState.SUBMITTING),
       }
     );
   }, [deckCode, handleError, setInput]);
@@ -95,9 +123,12 @@ const HearthstoneDeckEvaluator = () => {
   return renderDeckEvaluator({
     deckState: {
       deckCode,
-      isParsing,
+      isParsing:
+        evaluationState === DeckEvaluationState.FETCHING_CARDS ||
+        evaluationState === DeckEvaluationState.SUBMITTING,
       errorMessage,
       deckAnalysis,
+      manaCurve: manaAnalysis, // Add manaCurve to deckState
     },
     chatState: {
       messages,
@@ -106,8 +137,6 @@ const HearthstoneDeckEvaluator = () => {
     },
     modalState: {
       isModalOpen,
-      handleCloseModal,
-      handleOpenModal,
     },
     userRequestState: {
       userRequest,
@@ -116,7 +145,16 @@ const HearthstoneDeckEvaluator = () => {
     handlers: {
       handleDeckCodeChange,
       handleSubmit,
+      handleResetMessages: () => {
+        resetChat();
+        setDeckAnalysis([]);
+        setEvaluationState(DeckEvaluationState.ENTER_DECK_CODE);
+      },
+      handleCloseModal,
+      handleOpenModal,
+      stop,
     },
+    evaluationState,
   });
 };
 
