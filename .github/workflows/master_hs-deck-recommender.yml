@@ -46,7 +46,7 @@ jobs:
           if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
             VERSION=$(echo "${GITHUB_REF#refs/tags/}" | sed -e 's/^v//')
           else
-            VERSION=${{ env.fullSemVer }}
+            VERSION=${{ steps.version_step.outputs.fullSemVer }}
           fi
 
           # Additional tag for master branch
@@ -56,7 +56,7 @@ jobs:
 
           echo "IMAGE_ID=$IMAGE_ID"
           echo "VERSION=$VERSION"
-          echo "SemVer=${{ env.fullSemVer }}"
+          echo "SemVer=${{ steps.version_step.outputs.fullSemVer }}"
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
 
