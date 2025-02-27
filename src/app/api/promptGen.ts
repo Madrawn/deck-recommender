@@ -1,5 +1,7 @@
 import { JSDOM } from 'jsdom'
 import { unstable_cache } from 'next/cache'
+import fs from 'fs'
+import path from 'path'
 
 interface DeckStreamResultMap {
   card: CardMetadata
@@ -39,7 +41,8 @@ interface CardError {
 export type Card = CardMetadata | CardError
 export type DeckPromptOutput = {
   promptString: string
-  enrichedCards: Card[]
+  enrichedCards: Card[],
+  manaCurveAnalysis: string
 }
 
 const prefix = `Keyword explanation:
@@ -121,16 +124,17 @@ export default function generatePromptFromDeck (
     )
     .map(([keyword, explanation]) => `${keyword}: ${explanation}`)
     .join('\n')
+  const manaCurveAnalysis = `# MANA CURVE ANALYSIS
+# Average Cost: ${curveData.average}
+# Highest Cost: ${curveData.highestCost}
+# Curve Distribution:\n${curveData.chart
+    .split('\n')
+    .map(l => `# ${l}`)
+    .join('\n')}`
   const promptString = `Relevant Keyword explanations
 ${explanations}
 ${prolog}
-# MANA CURVE ANALYSIS
-# Average Cost: ${curveData.average}
-# Highest Cost: ${curveData.highestCost}
-# Curve Distribution:\n ${curveData.chart
-    .split('\n')
-    .map(l => `# ${l}`)
-    .join('\n')}
+${manaCurveAnalysis}
 ${cardLines
   .map(line => {
     const cardName = line.match(/\(\d+\)\s(.*)$/)?.[1].trim()
@@ -142,7 +146,7 @@ ${cardLines
   })
   .join('\n')}`
 
-  return { promptString, enrichedCards }
+  return { promptString, enrichedCards, manaCurveAnalysis }
 }
 const delay = (ms: number | undefined) =>
   new Promise(resolve => setTimeout(resolve, ms))
@@ -278,17 +282,39 @@ function calculateManaCurve (
 export async function retrieveCardInfo (cardName: string) {
   console.log('Fetching ' + cardName)
   const wikiName = cardName.replaceAll(' ', '_')
+  const cacheDir = path.resolve(__dirname, 'siteCache')
+  const cacheFile = path.join(cacheDir, `${wikiName}.html`)
+
   try {
+    if (!fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir)
+    }
+
     const getCachedWikiPage = unstable_cache(
       async wikiName => {
+        if (fs.existsSync(cacheFile)) {
+          const stats = fs.statSync(cacheFile)
+          const now = new Date().getTime()
+          const modifiedTime = new Date(stats.mtime).getTime()
+          const oneDay = 24 * 60 * 60 * 1000
+
+          if (now - modifiedTime < oneDay) {
+            return fs.readFileSync(cacheFile, 'utf-8')
+          }
+        }
+
         const response = await fetch(
           `https://hearthstone.wiki.gg/wiki/${wikiName}`
         )
-        return response.text()
+        await delay(1000)
+        const text = await response.text()
+        fs.writeFileSync(cacheFile, text, 'utf-8')
+        return text
       },
       ['wiki-pages'],
       { revalidate: 3600 } // 1 hour cache
     )
+
     const text = await getCachedWikiPage(wikiName)
     const doc = new JSDOM(text).window.document
     const cardInfo = doc.querySelector(
@@ -315,7 +341,5 @@ export async function retrieveCardInfo (cardName: string) {
       cardName,
       error: (error as Error).message
     } as CardError
-  } finally {
-    await delay(1000)
   }
 }
