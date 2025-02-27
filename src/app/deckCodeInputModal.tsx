@@ -3,8 +3,6 @@ import { Card as HsCard } from "./api/promptGen";
 export function deckCodeInputModal(props: {
   modalState: {
     isModalOpen: boolean;
-    handleCloseModal: () => void;
-    handleOpenModal: () => void;
   };
   deckState: {
     deckCode: string;
@@ -19,9 +17,11 @@ export function deckCodeInputModal(props: {
   handlers: {
     handleDeckCodeChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
     handleSubmit: () => Promise<void>;
+    handleCloseModal: () => void;
+    handleOpenModal: () => void;
   };
 }) {
-  const { modalState, deckState, userRequestState, handlers } = props;
+  const { deckState, userRequestState, handlers } = props;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
@@ -30,7 +30,7 @@ export function deckCodeInputModal(props: {
             <h3 className="text-xl font-bold">Deck Analysis Request</h3>
             <button
               title="Close Modal"
-              onClick={modalState.handleCloseModal}
+              onClick={handlers.handleCloseModal}
               className="text-gray-500 hover:text-gray-700"
             >
               <svg
@@ -83,13 +83,16 @@ export function deckCodeInputModal(props: {
 
           <div className="flex justify-end gap-4 mt-4">
             <button
-              onClick={modalState.handleCloseModal}
+              onClick={handlers.handleCloseModal}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition duration-200"
             >
               Cancel
             </button>
             <button
-              onClick={handlers.handleSubmit}
+              onClick={() => {
+                handlers.handleSubmit();
+                handlers.handleCloseModal();
+              }}
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition duration-200"
               disabled={deckState.isParsing}
             >
