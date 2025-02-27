@@ -20,7 +20,18 @@ jobs:
       #
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3.1.11
+        with:
+          versionSpec: '6.0.x'
+
+      - name: Determine Version
+        id: version_step # step id used as reference for output values
+        uses: gittools/actions/gitversion/execute@v3.1.11
+      
       - name: Build image
         run: docker build . --file Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
 
@@ -30,19 +41,34 @@ jobs:
       - name: Push image
         run: |
           IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
-
-          # This changes all uppercase characters to lowercase.
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-          # This strips the git ref prefix from the version.
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          # This strips the "v" prefix from the tag name.
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          # This uses the Docker `latest` tag convention.
-          [ "$VERSION" == "main" ] && VERSION=latest
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
+          # Version handling
+          if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
+            VERSION=$(echo "${GITHUB_REF#refs/tags/}" | sed -e 's/^v//')
+          else
+            VERSION=$env:SemVer
+          fi
+          
+          # Additional tag for master branch
+          if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
+            ADDITIONAL_TAG=latest
+          fi
+
+          echo "IMAGE_ID=$IMAGE_ID"
+          echo "VERSION=$VERSION"
+          echo "SemVer=$env:SemVer"
+          
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          
+          if [ -n "$ADDITIONAL_TAG" ]; then
+            docker tag $IMAGE_NAME $IMAGE_ID:$ADDITIONAL_TAG
+          fi
+
           docker push $IMAGE_ID:$VERSION
+          
+          if [ -n "$ADDITIONAL_TAG" ]; then
+            docker push $IMAGE_ID:$ADDITIONAL_TAG
+          fi
 
   # deploy:
   #   runs-on: ubuntu-latest
