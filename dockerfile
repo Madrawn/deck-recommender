@@ -5,7 +5,14 @@ FROM node:22-alpine AS base
 # Install dependencies only when needed
 FROM base AS deps
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat curl bash icu-libs
+# Download script and execute properly
+# Download, extract and install GitVersion properly
+
+
+# # Verify installation
+# RUN gitversion --version
+
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
@@ -24,11 +31,17 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+RUN apk add --no-cache curl bash icu-libs
+RUN curl -sL https://github.com/GitTools/GitVersion/releases/download/6.1.0/gitversion-linux-musl-x64-6.1.0.tar.gz -o /tmp/gitversion.tar.gz \
+  && mkdir -p /tmp/gitversion \
+  && tar -xzf /tmp/gitversion.tar.gz -C /tmp/gitversion \
+  && mv /tmp/gitversion/gitversion /bin/ \
+  && chmod +x /bin/gitversion \
+  && rm -rf /tmp/gitversion.tar.gz /tmp/gitversion
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.
 # ENV NEXT_TELEMETRY_DISABLED=1
-
 RUN \
   if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
