@@ -4,7 +4,7 @@ import Markdown from "react-markdown";
 import { deckCodeInputModal } from "./deckCodeInputModal";
 import { useState } from "react";
 import { DeckEvaluationState } from "./types";
-import version from "./version.json";
+import version from "@/app/version.json";
 
 type renderStateStepperProps = {
   evaluationState: DeckEvaluationState;

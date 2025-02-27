@@ -5,7 +5,7 @@
   "scripts": {
     "gitversion": "gitversion > ./src/app/version.json",
     "dev": "npm run gitversion && next dev",
-    "build": "npm run gitversion & next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "docker:build": "docker build -t deck-recommender .",
