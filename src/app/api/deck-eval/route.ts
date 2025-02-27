@@ -23,25 +23,27 @@ export const GET = withSseErrorHandling(async (req: NextRequest) => {
     await complete()
     return response
   }
+
   ;(async () => {
     try {
       const deckCode = Buffer.from(encodedDeck, 'base64').toString('utf-8')
       const { cards, cardLines, prolog } = parseDeckInput(deckCode)
-      // Your existing card processing logic
       const enrichedCards = new Map<string, Card>()
       for (const cardName of cards) {
         try {
           // ... card processing ...
-          const enrichedCard = await retrieveCardInfo(cardName)
-          if ('error' in enrichedCard && enrichedCard.error) {
-            throw new Error(enrichedCard.error)
-          } else if ('stats' in enrichedCard) {
-            await send({
-              type: 'card',
-              data: enrichedCard
-            })
+          if (!enrichedCards.has(cardName)) {
+            const enrichedCard = await retrieveCardInfo(cardName)
+            if ('error' in enrichedCard && enrichedCard.error) {
+              throw new Error(enrichedCard.error)
+            } else if ('stats' in enrichedCard) {
+              await send({
+                type: 'card',
+                data: enrichedCard
+              })
+            }
+            enrichedCards.set(enrichedCard.cardName, enrichedCard)
           }
-          enrichedCards.set(enrichedCard.cardName, enrichedCard)
         } catch (error) {
           const cardErrorInfo: Card = {
             cardName,
