@@ -1,7 +1,7 @@
 {
-  "AssemblySemFileVer": "0.3.0.0",
-  "AssemblySemVer": "0.3.0.0",
-  "BranchName": "develop",
+  "AssemblySemFileVer": "0.2.2.0",
+  "AssemblySemVer": "0.2.2.0",
+  "BranchName": "master",
   "BuildMetaData": null,
   "CommitDate": "2025-02-27",
   "CommitsSinceVersionSource": 6,

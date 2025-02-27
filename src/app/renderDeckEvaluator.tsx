@@ -169,7 +169,7 @@ export default function RenderDeckEvaluator(props: DeckEvaluatorProps) {
             {/* Deck Cards Section */}
             <div className="bg-white p-6 rounded-lg shadow-md col-span-1">
               <h2 className="text-xl font-bold mb-4 border-b pb-2">
-                Your Deck ({deckState.deckAnalysis.length} cards)
+                Your Deck ({deckState.deckAnalysis.length} unique cards)
               </h2>
               <div className="flex flex-wrap justify-center gap-2">
                 {deckState.deckAnalysis.map((card) =>

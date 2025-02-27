@@ -14,6 +14,7 @@ export async function POST (req: Request) {
   const result = await streamText({
     model: deepseek('deepseek-reasoner'),
     messages,
+    temperature: 0.2,
     
   })
   console.log('warnings', result.warnings)
