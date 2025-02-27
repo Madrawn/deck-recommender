@@ -1,5 +1,3 @@
 {
     "typescript.tsdk": "node_modules\\typescript\\lib",
-    "appService.defaultWebAppToDeploy": "/subscriptions/aba00da8-ad3c-4bd0-b58e-7f405d04ceb5/resourceGroups/appsvc_linux_westeurope/providers/Microsoft.Web/sites/hs-deck-recommender",
-    "appService.deploySubpath": "."
 }

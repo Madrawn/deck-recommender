@@ -3,7 +3,7 @@ import { Card as HsCard } from "./api/promptGen";
 import Markdown from "react-markdown";
 import { deckCodeInputModal } from "./deckCodeInputModal";
 import { useState } from "react";
-import { DeckEvaluationState } from "./page";
+import { DeckEvaluationState } from "./types";
 
 type renderStateStepperProps = {
   evaluationState: DeckEvaluationState;

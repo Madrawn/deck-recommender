@@ -4,14 +4,7 @@ import { DeckStreamResult, Card as HsCard } from "./api/promptGen";
 import renderDeckEvaluator from "./renderDeckEvaluator";
 import useDeckChat from "./deckChatService";
 import { doEventStream } from "./lib/sse/sse-client";
-
-export enum DeckEvaluationState {
-  ENTER_DECK_CODE = "ENTER_DECK_CODE",
-  FETCHING_CARDS = "FETCHING_CARDS",
-  SUBMITTING = "SUBMITTING",
-  EVALUATING = "EVALUATING",
-  DONE = "DONE",
-}
+import { DeckEvaluationState } from "./types";
 
 const HearthstoneDeckEvaluator = () => {
   // UI states

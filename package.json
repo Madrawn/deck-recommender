@@ -4,9 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm install && next build",
-    "start": "npm install -P && next start",
-    "lint": "next lint"
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "docker:build": "docker build -t deck-recommender .",
+    "docker:push": "docker image push ghcr.io/madrawn/deck-recommender:latest",
+    "docker": "npm run docker:build && npm run docker:push"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^0.1.12",
@@ -33,6 +36,6 @@
   },
   "engines": {
     "node": "^22",
-    "npm": "10.9.0"
+    "npm": "^10"
   }
 }
