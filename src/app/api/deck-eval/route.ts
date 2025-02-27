@@ -8,6 +8,7 @@ import generatePromptFromDeck, {
   DeckStreamResult,
   retrieveCardInfo
 } from '../promptGen'
+import { formatCardsJson } from '../promptGen.util'
 
 export const GET = withSseErrorHandling(async (req: NextRequest) => {
   const [send, complete, response] = setupSseUtilities<DeckStreamResult>()
@@ -60,7 +61,8 @@ export const GET = withSseErrorHandling(async (req: NextRequest) => {
       const finalResult = generatePromptFromDeck(
         cardLines,
         [...enrichedCards.values()],
-        prolog
+        prolog,
+        formatCardsJson
       )
       await send({ type: 'complete', data: finalResult })
     } finally {

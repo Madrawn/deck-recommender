@@ -2,6 +2,9 @@ import { JSDOM } from 'jsdom'
 import { unstable_cache } from 'next/cache'
 import fs from 'fs'
 import path from 'path'
+import {
+  calculateManaCurve, cleanHtmlContent, formatCardsHuman, parseCardInfo
+} from './promptGen.util'
 
 interface DeckStreamResultMap {
   card: CardMetadata
@@ -19,29 +22,29 @@ type DeckStreamResultBase<T extends keyof DeckStreamResultMap> = {
 export type DeckStreamResult = {
   [T in keyof DeckStreamResultMap]: DeckStreamResultBase<T>
 }[keyof DeckStreamResultMap]
-interface CardMetadata {
+export interface CardMetadata {
   cardName: string
   stats: {
     Description: string
     Cost: string
-    Attack: string
-    Health: string
-    Durability: string
+    Attack?: string
+    Health?: string
+    Durability?: string
     'Card type': string
-    Class: string
-    Runes: string
-    Rarity: string
+    Class?: string
+    Runes?: string
+    Rarity?: string
   }
 }
-interface CardError {
+export interface CardError {
   cardName: string
   error: string
 }
-
 export type Card = CardMetadata | CardError
+
 export type DeckPromptOutput = {
   promptString: string
-  enrichedCards: Card[],
+  enrichedCards: Card[]
   manaCurveAnalysis: string
 }
 
@@ -87,7 +90,8 @@ const prefix = `Keyword explanation:
 export default function generatePromptFromDeck (
   cardLines: string[],
   enrichedCards: Card[],
-  prolog: string
+  prolog: string,
+  formatCards = formatCardsHuman
 ): DeckPromptOutput {
   //     const deckInput = `
   // ### Custom Death Knight
@@ -108,7 +112,7 @@ export default function generatePromptFromDeck (
         )
         if (foundCard && 'stats' in foundCard) {
           // Type guard using 'in' operator
-          return foundCard.stats as CardMetadata['stats'] // Type assertion for clarity
+          return foundCard.stats as Pick<CardMetadata['stats'], "Cost"> // Type assertion for clarity
         } else {
           return { Cost: '' } // Or handle the error case as needed, e.g., return an empty stats object
         }
@@ -135,16 +139,7 @@ export default function generatePromptFromDeck (
 ${explanations}
 ${prolog}
 ${manaCurveAnalysis}
-${cardLines
-  .map(line => {
-    const cardName = line.match(/\(\d+\)\s(.*)$/)?.[1].trim()
-    const cardData = enrichedCards.find(c => c.cardName === cardName)
-    if (!cardData || ('error' in cardData && cardData.error))
-      return `${line} | Error: ${cardData?.error || 'No data'}`
-    else if ('stats' in cardData)
-      return `${line}\n${formatStats(cardData.stats)}`
-  })
-  .join('\n')}`
+${formatCards(cardLines, enrichedCards)}`
 
   return { promptString, enrichedCards, manaCurveAnalysis }
 }
@@ -157,11 +152,7 @@ async function getCardData (doc: Document): Promise<CardMetadata['stats']> {
     'aside > section:nth-child(2) > section > section:nth-child(1) center'
   )
   const description = descriptionElement
-    ? descriptionElement.innerHTML
-        .replace('<br>', '\n')
-        .replaceAll(/<.*?>/g, '')
-        .replace(/\n/g, ', ')
-        .trim()
+    ? cleanHtmlContent(descriptionElement)
     : ''
 
   const items: HTMLElement[] = [
@@ -196,87 +187,6 @@ async function getCardData (doc: Document): Promise<CardMetadata['stats']> {
     Class: stats.Class,
     Runes: stats.Runes,
     Rarity: rarity
-  }
-}
-function parseCardInfo (text: string) {
-  const lines = text
-    .split('\n')
-    .map(l => l.trim())
-    .filter(l => l)
-  const stats: { [key: string]: string } = {}
-
-  for (let i = 0; i < lines.length; i++) {
-    // Skip lines that are part of the description
-    if (lines[i].includes('Collectible') || lines[i].includes('Elite')) continue
-
-    // Handle key-value pairs
-    if (lines[i].endsWith(':') && i + 1 < lines.length) {
-      const key = lines[i].replace(':', '').trim()
-      stats[key] = lines[i + 1].trim()
-      i++
-    } else if (lines[i].includes(':')) {
-      const [key, ...values] = lines[i].split(':')
-      stats[key.trim()] = values.join(':').trim()
-    }
-  }
-
-  return stats
-}
-
-function formatStats (stats: { [key: string]: string }) {
-  const relevant = [
-    'Description',
-    'Rarity',
-    'Cost',
-    'Attack',
-    'Health',
-    'Durability',
-    'Card type',
-    'Class',
-    'Runes'
-  ]
-
-  return relevant
-    .map(k => (stats[k] ? `${k}: ${stats[k]}` : ''))
-    .filter(Boolean)
-    .join('\n')
-}
-function calculateManaCurve (
-  cards: { line: string; stats: { Cost: string } }[]
-) {
-  const curve: { [key: number]: number } = {}
-  let totalCards = 0
-  let totalCost = 0
-
-  cards.forEach(({ line, stats }) => {
-    console.log(line, stats)
-    const cost = parseInt(stats.Cost) || 0
-    const count = parseInt(line.match(/\d+x/)?.[0] ?? '') || 1
-
-    curve[cost] = (curve[cost] || 0) + count
-    totalCards += count
-    totalCost += cost * count
-  })
-
-  const maxCost = Math.max(...Object.keys(curve).map(Number))
-  const averageCost = (totalCost / totalCards).toFixed(1)
-
-  // Create ASCII bar chart
-  const curveChart = Array.from(
-    {
-      length: maxCost + 1
-    },
-    (_, i) => {
-      const count = curve[i] || 0
-      const bar = '■'.repeat(count) + ` (${count})`
-      return `${String(i).padStart(2)}: ${bar}`
-    }
-  ).join('\n')
-
-  return {
-    chart: curveChart,
-    average: averageCost,
-    highestCost: maxCost
   }
 }
 export async function retrieveCardInfo (cardName: string) {

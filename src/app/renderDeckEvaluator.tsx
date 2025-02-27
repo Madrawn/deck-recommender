@@ -2,9 +2,9 @@ import { UIMessage } from "ai";
 import { Card as HsCard } from "./api/promptGen";
 import Markdown from "react-markdown";
 import { deckCodeInputModal } from "./deckCodeInputModal";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { DeckEvaluationState } from "./types";
-import version from "@/app/version.json";
+import { getVersion } from "./version";
 
 type renderStateStepperProps = {
   evaluationState: DeckEvaluationState;
@@ -95,7 +95,7 @@ export default function RenderDeckEvaluator(props: DeckEvaluatorProps) {
     evaluationState,
   } = props;
   const [showReasoning, setShowReasoning] = useState(false);
-
+  const version = useMemo(() => getVersion(), []);
   const toggleReasoning = () => {
     setShowReasoning(!showReasoning);
   };
