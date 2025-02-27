@@ -2,12 +2,64 @@ import { UIMessage } from "ai";
 import { Card as HsCard } from "./api/promptGen";
 import Markdown from "react-markdown";
 import { deckCodeInputModal } from "./deckCodeInputModal";
-export default function renderDeckEvaluator(props: {
+import { useState } from "react";
+import { DeckEvaluationState } from "./page";
+
+type renderStateStepperProps = {
+  evaluationState: DeckEvaluationState;
+  handlers: { handleResetMessages: () => void; handleOpenModal: () => void };
+};
+
+export const RenderStateStepper: React.FC<renderStateStepperProps> = ({
+  evaluationState,
+  handlers,
+}) => {
+  const stateSteps = [
+    { state: DeckEvaluationState.ENTER_DECK_CODE, label: "Enter Deck Code" },
+    { state: DeckEvaluationState.FETCHING_CARDS, label: "Fetching Cards" },
+    { state: DeckEvaluationState.SUBMITTING, label: "Submitting Cards" },
+    { state: DeckEvaluationState.EVALUATING, label: "Evaluating" },
+    { state: DeckEvaluationState.DONE, label: "Reset" },
+  ];
+
+  return (
+    <div className="flex justify-center mb-8">
+      {stateSteps.map((step, index) => (
+        <div key={index} className="flex items-center">
+          <div
+            className={`px-4 py-2 rounded-full ${
+              evaluationState === step.state
+                ? step.state === DeckEvaluationState.DONE
+                  ? "bg-red-500 text-white cursor-pointer"
+                  : "bg-purple-600 text-white"
+                : "bg-gray-200 text-gray-600"
+            }`}
+            onClick={
+              step.state === DeckEvaluationState.DONE
+                ? handlers.handleResetMessages
+                : step.state === DeckEvaluationState.ENTER_DECK_CODE
+                ? handlers.handleOpenModal
+                : undefined
+            }
+          >
+            {step.label}
+          </div>
+          {index < stateSteps.length - 1 && (
+            <div className="w-8 h-1 bg-gray-300 mx-2"></div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+type DeckEvaluatorProps = {
   deckState: {
     deckCode: string;
     isParsing: boolean;
     errorMessage: string;
     deckAnalysis: HsCard[];
+    manaCurve: string; // Add manaCurve to deckState
   };
   chatState: {
     messages: UIMessage[];
@@ -16,8 +68,6 @@ export default function renderDeckEvaluator(props: {
   };
   modalState: {
     isModalOpen: boolean;
-    handleCloseModal: () => void;
-    handleOpenModal: () => void;
   };
   userRequestState: {
     userRequest: string;
@@ -26,10 +76,46 @@ export default function renderDeckEvaluator(props: {
   handlers: {
     handleDeckCodeChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
     handleSubmit: () => Promise<void>;
+    handleResetMessages: () => void;
+    handleCloseModal: () => void;
+    handleOpenModal: () => void;
+    stop: () => void;
   };
-}) {
-  const { deckState, chatState, modalState, userRequestState, handlers } =
-    props;
+  evaluationState: DeckEvaluationState;
+};
+
+export default function RenderDeckEvaluator(props: DeckEvaluatorProps) {
+  const {
+    deckState,
+    chatState,
+    modalState,
+    userRequestState,
+    handlers,
+    evaluationState,
+  } = props;
+  const [showReasoning, setShowReasoning] = useState(false);
+
+  const toggleReasoning = () => {
+    setShowReasoning(!showReasoning);
+  };
+
+  const getStateDescription = (state: DeckEvaluationState) => {
+    switch (state) {
+      case DeckEvaluationState.ENTER_DECK_CODE:
+        return "Enter your deck code to begin.";
+      case DeckEvaluationState.FETCHING_CARDS:
+        return "Fetching cards from the deck code...";
+      case DeckEvaluationState.SUBMITTING:
+        return "Submitting cards for Analysis...";
+      case DeckEvaluationState.EVALUATING:
+        return "Evaluating your deck...";
+      case DeckEvaluationState.DONE:
+        return "Evaluation complete!";
+      default:
+        return "";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-6xl mx-auto">
@@ -39,9 +125,21 @@ export default function renderDeckEvaluator(props: {
             Get AI-powered insights and recommendations for your Hearthstone
             deck
           </p>
+          <div className="mt-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium">Status:</span>
+              <span className="text-sm">
+                {getStateDescription(evaluationState)}
+              </span>
+            </div>
+          </div>
         </header>
 
-        {!deckState.deckCode ? (
+        <RenderStateStepper
+          {...{ evaluationState, handlers, showReasoning, setShowReasoning }}
+        />
+
+        {evaluationState === DeckEvaluationState.ENTER_DECK_CODE ? (
           <div className="bg-white p-8 rounded-lg shadow-md text-center">
             <h2 className="text-2xl font-bold mb-4">Evaluate Your Deck</h2>
             <p className="mb-6 text-gray-600">
@@ -49,7 +147,7 @@ export default function renderDeckEvaluator(props: {
               recommendations
             </p>
             <button
-              onClick={modalState.handleOpenModal}
+              onClick={handlers.handleOpenModal}
               className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
             >
               Paste Deck Code
@@ -57,6 +155,14 @@ export default function renderDeckEvaluator(props: {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Mana Curve Section */}
+            <div className="bg-white p-6 rounded-lg shadow-md col-span-1 lg:col-span-3">
+              <h2 className="text-xl font-bold mb-4 border-b pb-2">
+                Mana Curve Analysis
+              </h2>
+              <pre className="whitespace-pre-wrap">{deckState.manaCurve}</pre>
+            </div>
+
             {/* Deck Cards Section */}
             <div className="bg-white p-6 rounded-lg shadow-md col-span-1">
               <h2 className="text-xl font-bold mb-4 border-b pb-2">
@@ -67,12 +173,6 @@ export default function renderDeckEvaluator(props: {
                   renderCardPlaceholder(card)
                 )}
               </div>
-              <button
-                onClick={modalState.handleOpenModal}
-                className="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 w-full"
-              >
-                Change Deck
-              </button>
             </div>
 
             {/* Evaluation Section */}
@@ -81,17 +181,22 @@ export default function renderDeckEvaluator(props: {
                 <>
                   <h2 className="text-xl font-bold mb-4 border-b pb-2">
                     AI Evaluations {chatState.status}
+                    {evaluationState === DeckEvaluationState.EVALUATING && (
+                      <button
+                        onClick={handlers.stop}
+                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ml-4"
+                      >
+                        Stop
+                      </button>
+                    )}
                   </h2>
+
                   <div className="mb-6">
                     <h3 className="font-semibold text-lg mb-2">Analysis</h3>
-                    {/*<div className="bg-gray-50 p-4 rounded-md">
-                       <pre>{JSON.stringify(status, null, 2)}</pre>
-                      <pre>{JSON.stringify(error, null, 2)}</pre>
-                      <pre>{JSON.stringify(messages, null, 2)}</pre> 
-                    </div>*/}
                   </div>
-                  {deckState.isParsing || chatState.status === "submitted"
-                    ? renderLoadingSpinner("Analyzing your deck...")
+                  {evaluationState === DeckEvaluationState.FETCHING_CARDS ||
+                  evaluationState === DeckEvaluationState.SUBMITTING
+                    ? renderLoadingSpinner(getStateDescription(evaluationState))
                     : chatState.messages
                         .filter((message) => message.role !== "user")
                         .map((message) => (
@@ -110,21 +215,46 @@ export default function renderDeckEvaluator(props: {
                                     <h3 className="font-semibold text-lg mb-2">
                                       Response:
                                     </h3>
-                                    <Markdown>{part.text}</Markdown>
+                                    <Markdown>
+                                      {part.text.replace(/^\s*[\r\n]/gm, "")}
+                                    </Markdown>
                                   </p>
                                 );
                               }
 
                               // reasoning parts:
                               if (part.type === "reasoning") {
+                                const reasoningText = part.details
+                                  .map((detail) =>
+                                    detail.type === "text"
+                                      ? detail.text
+                                      : "<redacted>"
+                                  )
+                                  .join(" ");
                                 return (
-                                  <pre key={index} className="text-wrap">
-                                    {part.details.map((detail) =>
-                                      detail.type === "text"
-                                        ? detail.text
-                                        : "<redacted>"
+                                  <div key={index} className="border-b pb-2">
+                                    <h4
+                                      className="font-semibold text-lg mb-2 cursor-pointer flex items-center"
+                                      onClick={toggleReasoning}
+                                    >
+                                      <span className="mr-2">
+                                        Reasoning ({reasoningText.length}{" "}
+                                        characters)
+                                      </span>
+                                      <span
+                                        className={`transform transition-transform ${
+                                          showReasoning ? "rotate-90" : ""
+                                        }`}
+                                      >
+                                        ▶
+                                      </span>
+                                    </h4>
+                                    {showReasoning && (
+                                      <pre className="text-wrap">
+                                        {reasoningText}
+                                      </pre>
                                     )}
-                                  </pre>
+                                  </div>
                                 );
                               }
                             })}
@@ -152,6 +282,7 @@ export default function renderDeckEvaluator(props: {
     </div>
   );
 }
+
 function renderLoadingSpinner(text: string) {
   return (
     <div className="flex flex-col items-center justify-center h-64">
@@ -160,6 +291,7 @@ function renderLoadingSpinner(text: string) {
     </div>
   );
 }
+
 const renderCardPlaceholder = (card: HsCard) => {
   if ("error" in card && card.error) {
     return (
