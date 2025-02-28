@@ -192,12 +192,12 @@ async function getCardData (doc: Document): Promise<CardMetadata['stats']> {
 export async function retrieveCardInfo (cardName: string) {
   console.log('Fetching ' + cardName)
   const wikiName = cardName.replaceAll(' ', '_')
-  const cacheDir = path.resolve(__dirname, 'siteCache')
+  const cacheDir = path.resolve('/app', 'siteCache')
   const cacheFile = path.join(cacheDir, `${wikiName}.html`)
 
   try {
     if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir)
+      fs.mkdirSync(cacheDir, { recursive: true })
     }
 
     const getCachedWikiPage = unstable_cache(
