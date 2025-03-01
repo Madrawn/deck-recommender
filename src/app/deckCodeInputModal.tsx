@@ -103,7 +103,23 @@ export function DeckCodeInputModal(props: {
             onChange={handleFileChange}
             className="w-full p-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
-
+          <div className="mt-4">
+            <p className="text-gray-600 mb-2">
+              Download the Hearthstone Collection Fetcher tool to generate your
+              collection file:
+            </p>
+            <a
+              href="/HearthStoneCollectionFetch.exe"
+              download="HearthStoneCollectionFetch.exe"
+              className="text-purple-600 hover:text-purple-700 underline"
+            >
+              Download HearthStoneCollectionFetch.exe
+            </a>
+            <p className="text-gray-600 mt-2 text-sm">
+              Run this executable while Hearthstone is open to generate a
+              &quot;collection.json&quot; file containing the cards you own.
+            </p>
+          </div>
           {deckState.errorMessage && (
             <p className="text-red-500 mt-2">{deckState.errorMessage}</p>
           )}

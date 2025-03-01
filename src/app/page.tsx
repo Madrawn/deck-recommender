@@ -55,11 +55,26 @@ const HearthstoneDeckEvaluator = () => {
   }, []);
 
   useEffect(() => {
-    if (promptInput) {
+    if (promptInput && DeckEvaluationState.SUBMITTING) {
+      console.log("Evaluation submitted:", {
+        deckCode,
+        promptInput,
+        userRequest,
+        manaAnalysis,
+        collection,
+      });
+
       handleChatSubmit();
       console.log("Deck evaluation running...");
     }
-  }, [promptInput, handleChatSubmit]);
+  }, [
+    promptInput,
+    handleChatSubmit,
+    deckCode,
+    userRequest,
+    manaAnalysis,
+    collection,
+  ]);
 
   useEffect(() => {
     if (
@@ -92,6 +107,7 @@ const HearthstoneDeckEvaluator = () => {
         setEvaluationState(DeckEvaluationState.ENTER_DECK_CODE);
       };
     }
+    console.log("Deck code submitted:", deckCode);
     const encodedDeck = btoa(deckCode);
     const closeStream = await doEventStream<DeckStreamResult>(
       `/api/deck-eval?d=${encodedDeck}`,
@@ -126,6 +142,7 @@ const HearthstoneDeckEvaluator = () => {
                 })
             );
             const promptWithCollection = `${event.data.promptString}\n\n${userRequest}\n\nThese are the cards I own in my collection and fit into this deck:\n${filteredCollection}`;
+            console.log("filteredCollection:", filteredCollection);
             setPromptInput(promptWithCollection);
             setInput(promptWithCollection);
             closeStream?.();
