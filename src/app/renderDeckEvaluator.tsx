@@ -1,57 +1,20 @@
 import { UIMessage } from "ai";
 import { Card as HsCard } from "./api/promptGen";
 import Markdown from "react-markdown";
-import { deckCodeInputModal } from "./deckCodeInputModal";
+import { DeckCodeInputModal } from "./deckCodeInputModal";
 import { useMemo, useState } from "react";
-import { DeckEvaluationState } from "./types";
+import { CollectionCard, DeckEvaluationState } from "./types";
 import { getVersion } from "./version";
+import {
+  getStateDescription,
+  renderCardPlaceholder,
+  renderLoadingSpinner,
+} from "./renderDeckEvaluator.util";
+import { RenderStateStepper } from "./RenderStateStepper";
 
-type renderStateStepperProps = {
+export type renderStateStepperProps = {
   evaluationState: DeckEvaluationState;
   handlers: { handleResetMessages: () => void; handleOpenModal: () => void };
-};
-
-export const RenderStateStepper: React.FC<renderStateStepperProps> = ({
-  evaluationState,
-  handlers,
-}) => {
-  const stateSteps = [
-    { state: DeckEvaluationState.ENTER_DECK_CODE, label: "Enter Deck Code" },
-    { state: DeckEvaluationState.FETCHING_CARDS, label: "Fetching Cards" },
-    { state: DeckEvaluationState.SUBMITTING, label: "Submitting Cards" },
-    { state: DeckEvaluationState.EVALUATING, label: "Evaluating" },
-    { state: DeckEvaluationState.DONE, label: "Reset" },
-  ];
-
-  return (
-    <div className="flex justify-center mb-8">
-      {stateSteps.map((step, index) => (
-        <div key={index} className="flex items-center">
-          <div
-            className={`px-4 py-2 rounded-full ${
-              evaluationState === step.state
-                ? step.state === DeckEvaluationState.DONE
-                  ? "bg-red-500 text-white cursor-pointer"
-                  : "bg-purple-600 text-white"
-                : "bg-gray-200 text-gray-600"
-            }`}
-            onClick={
-              step.state === DeckEvaluationState.DONE
-                ? handlers.handleResetMessages
-                : step.state === DeckEvaluationState.ENTER_DECK_CODE
-                ? handlers.handleOpenModal
-                : undefined
-            }
-          >
-            {step.label}
-          </div>
-          {index < stateSteps.length - 1 && (
-            <div className="w-8 h-1 bg-gray-300 mx-2"></div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
 };
 
 type DeckEvaluatorProps = {
@@ -63,6 +26,7 @@ type DeckEvaluatorProps = {
     manaCurve: string; // Add manaCurve to deckState
   };
   chatState: {
+    promptInput: string;
     messages: UIMessage[];
     status: "error" | "submitted" | "streaming" | "ready";
     error: Error | undefined;
@@ -81,10 +45,11 @@ type DeckEvaluatorProps = {
     handleCloseModal: () => void;
     handleOpenModal: () => void;
     stop: () => void;
+    handleCollectionUpload: (collection: CollectionCard[]) => void; // Add handler for collection upload
   };
   evaluationState: DeckEvaluationState;
+  collection: CollectionCard[]; // Add collection to props
 };
-
 export default function RenderDeckEvaluator(props: DeckEvaluatorProps) {
   const {
     deckState,
@@ -98,23 +63,6 @@ export default function RenderDeckEvaluator(props: DeckEvaluatorProps) {
   const version = useMemo(() => getVersion(), []);
   const toggleReasoning = () => {
     setShowReasoning(!showReasoning);
-  };
-
-  const getStateDescription = (state: DeckEvaluationState) => {
-    switch (state) {
-      case DeckEvaluationState.ENTER_DECK_CODE:
-        return "Enter your deck code to begin.";
-      case DeckEvaluationState.FETCHING_CARDS:
-        return "Fetching cards from the deck code...";
-      case DeckEvaluationState.SUBMITTING:
-        return "Submitting cards for Analysis...";
-      case DeckEvaluationState.EVALUATING:
-        return "Evaluating your deck...";
-      case DeckEvaluationState.DONE:
-        return "Evaluation complete!";
-      default:
-        return "";
-    }
   };
 
   return (
@@ -254,6 +202,7 @@ export default function RenderDeckEvaluator(props: DeckEvaluatorProps) {
                                     </h4>
                                     {showReasoning && (
                                       <pre className="text-wrap">
+                                        {chatState.promptInput}
                                         {reasoningText}
                                       </pre>
                                     )}
@@ -276,7 +225,7 @@ export default function RenderDeckEvaluator(props: DeckEvaluatorProps) {
 
       {/* Modal for deck code input */}
       {modalState.isModalOpen &&
-        deckCodeInputModal({
+        DeckCodeInputModal({
           modalState,
           deckState,
           userRequestState,
@@ -285,57 +234,3 @@ export default function RenderDeckEvaluator(props: DeckEvaluatorProps) {
     </div>
   );
 }
-
-function renderLoadingSpinner(text: string) {
-  return (
-    <div className="flex flex-col items-center justify-center h-64">
-      <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-      <p className="mt-4 text-gray-600">{text}</p>
-    </div>
-  );
-}
-
-const renderCardPlaceholder = (card: HsCard) => {
-  if ("error" in card && card.error) {
-    return (
-      <div key={card.cardName} className="flex flex-col items-center mb-4 w-32">
-        <div className="bg-gray-200 border-2 border-dashed rounded-xl w-24 h-32 mb-2 relative overflow-hidden">
-          <div className="absolute top-1 left-1 w-6 h-6 rounded-full flex items-center justify-center text-white font-bold bg-red-500">
-            !
-          </div>
-        </div>
-        <div className="text-center">
-          <p className="font-medium text-sm truncate w-full">{card.cardName}</p>
-          <p className="text-xs text-gray-600">Error</p>
-        </div>
-      </div>
-    );
-  } else if ("stats" in card) {
-    const costColor = getCostColor(card.stats.Cost);
-
-    return (
-      <div key={card.cardName} className="flex flex-col items-center mb-4 w-32">
-        <div className="bg-gray-200 border-2 border-dashed rounded-xl w-24 h-32 mb-2 relative overflow-hidden">
-          <div
-            className={`absolute top-1 left-1 w-6 h-6 rounded-full flex items-center justify-center text-white font-bold ${costColor}`}
-          >
-            {card.stats.Cost}
-          </div>
-        </div>
-        <div className="text-center">
-          <p className="font-medium text-sm truncate w-full">{card.cardName}</p>
-          <p className="text-xs text-gray-600">{card.stats["Card type"]}</p>
-        </div>
-      </div>
-    );
-  }
-};
-
-const getCostColor = (cost: string) => {
-  const costNum = parseInt(cost);
-  if (costNum <= 2) return "bg-blue-500";
-  if (costNum <= 4) return "bg-green-500";
-  if (costNum <= 6) return "bg-yellow-500";
-  if (costNum <= 8) return "bg-orange-500";
-  return "bg-red-500";
-};

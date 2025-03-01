@@ -4,7 +4,7 @@ import { DeckStreamResult, Card as HsCard } from "./api/promptGen";
 import renderDeckEvaluator from "./renderDeckEvaluator";
 import useDeckChat from "./deckChatService";
 import { doEventStream } from "./lib/sse/sse-client";
-import { DeckEvaluationState } from "./types";
+import { CollectionCard, DeckEvaluationState } from "./types";
 
 const HearthstoneDeckEvaluator = () => {
   // UI states
@@ -19,6 +19,7 @@ const HearthstoneDeckEvaluator = () => {
   const [userRequest, setUserRequest] = useState(
     "Can you evaluate this deck and suggest improvements?"
   );
+  const [collection, setCollection] = useState<CollectionCard[]>([]); // Add state for collection
 
   // State tracking
   const [evaluationState, setEvaluationState] = useState<DeckEvaluationState>(
@@ -43,6 +44,10 @@ const HearthstoneDeckEvaluator = () => {
     setDeckCode(e.target.value);
   };
 
+  const handleCollectionUpload = (collection: CollectionCard[]) => {
+    setCollection(collection);
+  };
+
   const handleError = useCallback((error: unknown, context: string) => {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`${context}:`, message);
@@ -50,11 +55,26 @@ const HearthstoneDeckEvaluator = () => {
   }, []);
 
   useEffect(() => {
-    if (promptInput) {
+    if (promptInput && DeckEvaluationState.SUBMITTING) {
+      console.log("Evaluation submitted:", {
+        deckCode,
+        promptInput,
+        userRequest,
+        manaAnalysis,
+        collection,
+      });
+
       handleChatSubmit();
       console.log("Deck evaluation running...");
     }
-  }, [promptInput, handleChatSubmit]);
+  }, [
+    promptInput,
+    handleChatSubmit,
+    deckCode,
+    userRequest,
+    manaAnalysis,
+    collection,
+  ]);
 
   useEffect(() => {
     if (
@@ -87,6 +107,7 @@ const HearthstoneDeckEvaluator = () => {
         setEvaluationState(DeckEvaluationState.ENTER_DECK_CODE);
       };
     }
+    console.log("Deck code submitted:", deckCode);
     const encodedDeck = btoa(deckCode);
     const closeStream = await doEventStream<DeckStreamResult>(
       `/api/deck-eval?d=${encodedDeck}`,
@@ -100,8 +121,30 @@ const HearthstoneDeckEvaluator = () => {
             break;
           case "complete":
             setManaAnalysis(event.data.manaCurveAnalysis);
-            setPromptInput(event.data.promptString);
-            setInput(event.data.promptString);
+            const filteredCollection = JSON.stringify(
+              collection
+                .filter(
+                  (item) =>
+                    item.CardDetails.Class.toLowerCase() ===
+                      deckCode.match(/# Class: (\w+)/)?.[1].toLowerCase() ||
+                    item.CardDetails.Class.toLowerCase() === "neutral"
+                )
+                .map((item) => {
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                  const { Type, Class, Rarity, ...rest } = item.CardDetails;
+                  // Remove properties with value 0 from the rest object
+                  const cleanedStats = Object.fromEntries(
+                    Object.entries(rest).filter(([, value]) => value !== 0)
+                  );
+                  return {
+                    ...cleanedStats,
+                  };
+                })
+            );
+            const promptWithCollection = `${event.data.promptString}\n\n${userRequest}\n\nThese are the cards I own in my collection and fit into this deck:\n${filteredCollection}`;
+            console.log("filteredCollection:", filteredCollection);
+            setPromptInput(promptWithCollection);
+            setInput(promptWithCollection);
             closeStream?.();
             break;
         }
@@ -111,7 +154,7 @@ const HearthstoneDeckEvaluator = () => {
         onComplete: () => setEvaluationState(DeckEvaluationState.SUBMITTING),
       }
     );
-  }, [deckCode, handleError, setInput]);
+  }, [deckCode, handleError, collection, userRequest, setInput]);
 
   return renderDeckEvaluator({
     deckState: {
@@ -124,6 +167,7 @@ const HearthstoneDeckEvaluator = () => {
       manaCurve: manaAnalysis, // Add manaCurve to deckState
     },
     chatState: {
+      promptInput,
       messages,
       status,
       error,
@@ -146,8 +190,10 @@ const HearthstoneDeckEvaluator = () => {
       handleCloseModal,
       handleOpenModal,
       stop,
+      handleCollectionUpload, // Pass collection upload handler
     },
     evaluationState,
+    collection, // Pass collection data
   });
 };
 
