@@ -3,9 +3,14 @@ import { unstable_cache } from 'next/cache'
 import fs from 'fs'
 import path from 'path'
 import {
-  calculateManaCurve, cleanHtmlContent, formatCardsHuman, parseCardInfo
+  calculateManaCurve,
+  cleanHtmlContent,
+  formatCardsHuman,
+  parseCardInfo
 } from './promptGen.util'
-
+import cards from '../../../tool/cards.collectible.json'
+import { HearthstoneCard } from '../types'
+const CardDB = cards as HearthstoneCard[]
 interface DeckStreamResultMap {
   card: CardMetadata
   complete: DeckPromptOutput
@@ -112,7 +117,7 @@ export default function generatePromptFromDeck (
         )
         if (foundCard && 'stats' in foundCard) {
           // Type guard using 'in' operator
-          return foundCard.stats as Pick<CardMetadata['stats'], "Cost"> // Type assertion for clarity
+          return foundCard.stats as Pick<CardMetadata['stats'], 'Cost'> // Type assertion for clarity
         } else {
           return { Cost: '' } // Or handle the error case as needed, e.g., return an empty stats object
         }
@@ -190,6 +195,38 @@ async function getCardData (doc: Document): Promise<CardMetadata['stats']> {
   }
 }
 export async function retrieveCardInfo (cardName: string) {
+  try {
+    return _retrieveCardInfoLocal(cardName)
+  } catch {
+    console.log('Error fetching card from local database, trying network')
+    return _retrieveCardInfoNet(cardName)
+  }
+}
+
+function _retrieveCardInfoLocal (cardName: string) {
+  const card = CardDB.find(c => c.name === cardName)
+  if (card) {
+    return {
+      cardName,
+      stats: {
+        Description: card.text || '',
+        Cost: card.cost.toString(),
+        Attack: card.attack?.toString() || '',
+        Health: card.health?.toString() || '',
+        Durability: card.durability?.toString() || '',
+        'Card type': card.type,
+        Class: card.cardClass,
+        Rarity: card.rarity
+      }
+    } as CardMetadata
+  } else {
+    return {
+      cardName,
+      error: 'Card not found in local database'
+    } as CardError
+  }
+}
+async function _retrieveCardInfoNet (cardName: string) {
   console.log('Fetching ' + cardName)
   const wikiName = cardName.replaceAll(' ', '_')
   const cacheDir = path.resolve(__dirname, 'siteCache')
@@ -206,9 +243,9 @@ export async function retrieveCardInfo (cardName: string) {
           const stats = fs.statSync(cacheFile)
           const now = new Date().getTime()
           const modifiedTime = new Date(stats.mtime).getTime()
-          const oneDay = 24 * 60 * 60 * 1000
+          const oneWeek = 7 * 24 * 60 * 60 * 1000
 
-          if (now - modifiedTime < oneDay) {
+          if (now - modifiedTime < oneWeek) {
             return fs.readFileSync(cacheFile, 'utf-8')
           }
         }
