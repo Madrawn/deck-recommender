@@ -1,6 +1,7 @@
 import { Card as HsCard } from "./api/promptGen";
+import { CollectionCard } from "./types";
 
-export function deckCodeInputModal(props: {
+export function DeckCodeInputModal(props: {
   modalState: {
     isModalOpen: boolean;
   };
@@ -19,9 +20,27 @@ export function deckCodeInputModal(props: {
     handleSubmit: () => Promise<void>;
     handleCloseModal: () => void;
     handleOpenModal: () => void;
+    handleCollectionUpload: (collection: CollectionCard[]) => void; // Add handler for collection upload
   };
 }) {
   const { deckState, userRequestState, handlers } = props;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const collectionFile = e.target.files?.[0] || null;
+    if (collectionFile) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const collection = JSON.parse(event.target?.result as string);
+          handlers.handleCollectionUpload(collection);
+        } catch (error) {
+          console.error("Error parsing collection file:", error);
+        }
+      };
+      reader.readAsText(collectionFile);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
@@ -76,6 +95,14 @@ export function deckCodeInputModal(props: {
 #
 ...`}
           ></textarea>
+          <label htmlFor="collection">Upload a card collection.</label>
+          <input
+            type="file"
+            id="collection"
+            accept=".json"
+            onChange={handleFileChange}
+            className="w-full p-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
 
           {deckState.errorMessage && (
             <p className="text-red-500 mt-2">{deckState.errorMessage}</p>
