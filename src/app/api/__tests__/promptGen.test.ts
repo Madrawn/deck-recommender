@@ -10,11 +10,11 @@ import generatePromptFromDeck, { Card } from '../promptGen'
 describe('Mana Curve Calculations', () => {
   test('should calculate basic curve', () => {
     const cards = [
-      { count: 2,stats: { Cost: '1' } },
+      { count: 2, stats: { Cost: '1' } },
       { count: 1, stats: { Cost: '3' } }
     ]
 
-    const result = calculateManaCurve((cards as unknown) as Card[])
+    const result = calculateManaCurve(cards as unknown as Card[])
     expect(result.average).toBe(((2 * 1 + 1 * 3) / 3).toFixed(1))
     expect(result.chart).toContain('1: ■■ (2)')
   })
@@ -238,6 +238,53 @@ describe('Card Formatting Full', () => {
 #  2:  (0)
 #  3: ■■ (2)
 ${JSON.stringify(enrichedCards)}`
+    })
+  })
+})
+
+describe('calculateManaCurve', () => {
+  it('should calculate the correct mana curve for given cards', () => {
+    const cards: Card[] = [
+      { cardName: 'Card1', stats: { Cost: '2' }, count: 2 } as unknown as Card,
+      { cardName: 'Card2', stats: { Cost: '3' }, count: 1 } as unknown as Card,
+      { cardName: 'Card3', stats: { Cost: '5' }, count: 3 } as unknown as Card,
+      { cardName: 'Card4', stats: { Cost: '5' }, count: 3 } as unknown as Card
+    ]
+
+    const result = calculateManaCurve(cards)
+
+    expect(result).toEqual({
+      chart:
+        ' 0:  (0)\n 1:  (0)\n 2: ■■ (2)\n 3: ■ (1)\n 4:  (0)\n 5: ■■■■■■ (6)',
+      average: ((2 * 2 + 3 * 1 + 5 * 3 + 5 * 3) / 9).toFixed(1),
+      highestCost: 5
+    })
+  })
+
+  it('should handle empty card array', () => {
+    const cards: Card[] = []
+
+    const result = calculateManaCurve(cards)
+
+    expect(result).toEqual({
+      chart: '',
+      average: 'NaN',
+      highestCost: -Infinity
+    })
+  })
+
+  it('should handle cards with no stats', () => {
+    const cards: Card[] = [
+      { cardName: 'Card1', stats: { Cost: '2' }, count: 2 } as unknown as Card,
+      { cardName: 'Card2', stats: {}, count: 1 } as unknown as Card
+    ]
+
+    const result = calculateManaCurve(cards)
+
+    expect(result).toEqual({
+      chart: ' 0:  (0)\n 1:  (0)\n 2: ■■ (2)',
+      average: '2.0',
+      highestCost: 2
     })
   })
 })
