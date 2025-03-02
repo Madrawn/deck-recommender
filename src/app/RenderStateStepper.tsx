@@ -1,4 +1,4 @@
-import { renderStateStepperProps } from "./renderDeckEvaluator";
+import { renderStateStepperProps } from "./types";
 import { DeckEvaluationState } from "./types";
 
 

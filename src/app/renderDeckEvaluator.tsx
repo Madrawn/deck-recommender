@@ -1,5 +1,5 @@
 import { UIMessage } from "ai";
-import { Card as HsCard } from "./api/promptGen";
+import { Card as HsCard } from "./types";
 import Markdown from "react-markdown";
 import { DeckCodeInputModal } from "./deckCodeInputModal";
 import { useMemo, useState } from "react";
@@ -11,11 +11,6 @@ import {
   renderLoadingSpinner,
 } from "./renderDeckEvaluator.util";
 import { RenderStateStepper } from "./RenderStateStepper";
-
-export type renderStateStepperProps = {
-  evaluationState: DeckEvaluationState;
-  handlers: { handleResetMessages: () => void; handleOpenModal: () => void };
-};
 
 type DeckEvaluatorProps = {
   deckState: {
@@ -37,6 +32,8 @@ type DeckEvaluatorProps = {
   userRequestState: {
     userRequest: string;
     handleUserRequestChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    selectedModel: string; // Add selected model
+    handleModelChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; // Add handler for model change
   };
   handlers: {
     handleDeckCodeChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
