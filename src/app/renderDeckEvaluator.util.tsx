@@ -1,4 +1,4 @@
-import { Card as HsCard } from "./api/promptGen";
+import { Card } from "./types";
 import { DeckEvaluationState } from "./types";
 
 export function renderLoadingSpinner(text: string) {
@@ -8,7 +8,8 @@ export function renderLoadingSpinner(text: string) {
       <p className="mt-4 text-gray-600">{text}</p>
     </div>
   );
-}export const renderCardPlaceholder = (card: HsCard) => {
+}
+export const renderCardPlaceholder = (card: Card) => {
   if ("error" in card && card.error) {
     return (
       <div key={card.cardName} className="flex flex-col items-center mb-4 w-32">
@@ -33,6 +34,9 @@ export function renderLoadingSpinner(text: string) {
             className={`absolute top-1 left-1 w-6 h-6 rounded-full flex items-center justify-center text-white font-bold ${costColor}`}
           >
             {card.stats.Cost}
+          </div>
+          <div className="absolute bottom-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-white font-bold bg-gray-700">
+            x{card.count}
           </div>
         </div>
         <div className="text-center">
@@ -67,4 +71,3 @@ export const getStateDescription = (state: DeckEvaluationState) => {
       return "";
   }
 };
-

@@ -1,13 +1,5 @@
+import { AppVersion } from './types'
 import version from './version.json'
-
-export interface AppVersion {
-  FullSemVer: string
-  Major: number
-  Minor: number
-  Patch: number
-  CommitDate: string
-  Sha: string
-}
 
 export const getVersion = (): AppVersion => {
   try {

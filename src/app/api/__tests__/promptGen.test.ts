@@ -5,7 +5,8 @@ import {
   formatCardsJson,
   parseCardInfo
 } from '@/app/api/promptGen.util'
-import generatePromptFromDeck, { Card } from '../promptGen'
+import generatePromptFromDeck from '../promptGen'
+import { Card } from '@/app/types'
 
 describe('Mana Curve Calculations', () => {
   test('should calculate basic curve', () => {

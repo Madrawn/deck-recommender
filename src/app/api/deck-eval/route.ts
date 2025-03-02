@@ -4,10 +4,10 @@ import {
 } from '@/app/lib/sse/sse-server'
 import { NextRequest } from 'next/server'
 import generatePromptFromDeck, {
-  Card,
-  DeckStreamResult,
   retrieveCardInfo
 } from '../promptGen'
+import { DeckStreamResult } from '@/app/types'
+import { Card } from '@/app/types'
 import { formatCardsJson } from '../promptGen.util'
 
 export const GET = withSseErrorHandling(async (req: NextRequest) => {

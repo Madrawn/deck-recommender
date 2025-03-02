@@ -1,4 +1,4 @@
-import { Card as HsCard } from "./api/promptGen";
+import { Card } from "./types";
 import { CollectionCard } from "./types";
 
 export function DeckCodeInputModal(props: {
@@ -9,7 +9,7 @@ export function DeckCodeInputModal(props: {
     deckCode: string;
     isParsing: boolean;
     errorMessage: string;
-    deckAnalysis: HsCard[];
+    deckAnalysis: Card[];
   };
   userRequestState: {
     userRequest: string;
