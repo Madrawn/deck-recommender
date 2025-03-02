@@ -132,14 +132,17 @@ export default function RenderDeckEvaluator(props: DeckEvaluatorProps) {
                 <>
                   <h2 className="text-xl font-bold mb-4 border-b pb-2">
                     AI Evaluations {chatState.status}
-                    {evaluationState === DeckEvaluationState.EVALUATING && (
+                    {chatState.status === "streaming" || chatState.status === "submitted" ? (
                       <button
-                        onClick={handlers.stop}
+                        onClick={() => {
+                          handlers.stop();
+                          handlers.handleResetMessages();
+                        }}
                         className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ml-4"
                       >
                         Stop
                       </button>
-                    )}
+                    ) : null}
                   </h2>
 
                   <div className="mb-6">
