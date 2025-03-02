@@ -29,6 +29,7 @@ export type DeckStreamResult = {
 }[keyof DeckStreamResultMap]
 export interface CardMetadata {
   cardName: string
+  count: number
   stats: {
     Description: string
     Cost: string
@@ -152,7 +153,6 @@ const delay = (ms: number | undefined) =>
   new Promise(resolve => setTimeout(resolve, ms))
 
 async function getCardData (doc: Document): Promise<CardMetadata['stats']> {
-  // Extract description from center element
   const descriptionElement = doc.querySelector(
     'aside > section:nth-child(2) > section > section:nth-child(1) center'
   )
@@ -175,7 +175,6 @@ async function getCardData (doc: Document): Promise<CardMetadata['stats']> {
     })[0]
   const rarity = extractedRarityInfo?.[1].trim() ?? ''
 
-  // Extract other stats from the main aside section
   const cardInfoSection = doc.querySelector(
     'aside > section:nth-child(2) > section > section:nth-child(1)'
   ) as HTMLElement
@@ -194,20 +193,21 @@ async function getCardData (doc: Document): Promise<CardMetadata['stats']> {
     Rarity: rarity
   }
 }
-export async function retrieveCardInfo (cardName: string) {
+export async function retrieveCardInfo (cardName: string, count: number) {
   try {
-    return _retrieveCardInfoLocal(cardName)
+    return _retrieveCardInfoLocal(cardName, count)
   } catch {
     console.log('Error fetching card from local database, trying network')
-    return _retrieveCardInfoNet(cardName)
+    return _retrieveCardInfoNet(cardName, count)
   }
 }
 
-function _retrieveCardInfoLocal (cardName: string) {
+function _retrieveCardInfoLocal (cardName: string, count: number) {
   const card = CardDB.find(c => c.name === cardName)
   if (card) {
     return {
       cardName,
+      count,
       stats: {
         Description: card.text || '',
         Cost: card.cost.toString(),
@@ -226,7 +226,7 @@ function _retrieveCardInfoLocal (cardName: string) {
     } as CardError
   }
 }
-async function _retrieveCardInfoNet (cardName: string) {
+async function _retrieveCardInfoNet (cardName: string, count: number) {
   console.log('Fetching ' + cardName)
   const wikiName = cardName.replaceAll(' ', '_')
   const cacheDir = path.resolve('/app', 'siteCache')
@@ -259,7 +259,7 @@ async function _retrieveCardInfoNet (cardName: string) {
         return text
       },
       ['wiki-pages'],
-      { revalidate: 3600 } // 1 hour cache
+      { revalidate: 3600 }
     )
 
     const text = await getCachedWikiPage(wikiName)
@@ -274,6 +274,7 @@ async function _retrieveCardInfoNet (cardName: string) {
 
       return {
         cardName,
+        count,
         stats: cardData
       } as CardMetadata
     } else {

@@ -30,11 +30,10 @@ export const GET = withSseErrorHandling(async (req: NextRequest) => {
       const deckCode = Buffer.from(encodedDeck, 'base64').toString('utf-8')
       const { cards, cardLines, prolog } = parseDeckInput(deckCode)
       const enrichedCards = new Map<string, Card>()
-      for (const cardName of cards) {
+      for (const { name: cardName, count } of cards) {
         try {
-          // ... card processing ...
           if (!enrichedCards.has(cardName)) {
-            const enrichedCard = await retrieveCardInfo(cardName)
+            const enrichedCard = await retrieveCardInfo(cardName, count)
             if ('error' in enrichedCard && enrichedCard.error) {
               throw new Error(enrichedCard.error)
             } else if ('stats' in enrichedCard) {
@@ -72,14 +71,20 @@ export const GET = withSseErrorHandling(async (req: NextRequest) => {
 
   return response
 })
-function parseDeckInput (deckInput: string) {
+function parseDeckInput(deckInput: string) {
   const cardLines = deckInput.split('\n').filter(line => line.includes('x ('))
-  const prolog = deckInput
-    .split('\n')
-    .filter(line => !line.includes('x ('))
-    .join('\n')
-  const cards = cardLines.map(
-    line => line.match(/\(\d+\)\s(.*)$/)?.[1].trim() ?? '#error'
-  )
+  const prolog = deckInput.split('\n').filter(line => !line.includes('x (')).join('\n')
+
+  const cardCounts = new Map<string, number>()
+  for (const line of cardLines) {
+    const match = line.match(/^#\s*(\d+)x\s+\(\d+\)\s+(.*)$/)
+    if (match) {
+      const count = parseInt(match[1], 10)
+      const cardName = match[2].trim()
+      cardCounts.set(cardName, (cardCounts.get(cardName) || 0) + count)
+    }
+  }
+
+  const cards = Array.from(cardCounts.entries()).map(([name, count]) => ({ name, count }))
   return { cards, cardLines, prolog }
 }

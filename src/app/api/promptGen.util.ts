@@ -55,19 +55,17 @@ export function parseCardInfo (text: string) {
   return stats
 }
 export function computeTotalCardsAndCost (
-  cards: { line: string; stats: Pick<CardMetadata['stats'], 'Cost'> }[],
+  cards: { line: string; stats: Pick<CardMetadata['stats'], 'Cost'>; count?: number }[],
   curve: { [key: number]: number }
 ) {
   let totalCards = 0
   let totalCost = 0
-  cards.forEach(({ line, stats }) => {
-    console.log(line, stats)
+  cards.forEach(({ stats, count }) => {
     const cost = parseInt(stats.Cost) || 0
-    const count = parseInt(line.match(/\d+x/)?.[0] ?? '') || 1
-
-    curve[cost] = (curve[cost] || 0) + count
-    totalCards += count
-    totalCost += cost * count
+    const cardCount = count || 1
+    curve[cost] = (curve[cost] || 0) + cardCount
+    totalCards += cardCount
+    totalCost += cost * cardCount
   })
   return { totalCards, totalCost }
 }
@@ -87,7 +85,7 @@ export function buildCostBarGraph (
   )
 }
 export function calculateManaCurve (
-  cards: { line: string; stats: Pick<CardMetadata['stats'], 'Cost'> }[]
+  cards: { line: string; stats: Pick<CardMetadata['stats'], 'Cost'>; count?: number }[
 ) {
   const curve: { [key: number]: number } = {}
   const { totalCards, totalCost } = computeTotalCardsAndCost(cards, curve)
