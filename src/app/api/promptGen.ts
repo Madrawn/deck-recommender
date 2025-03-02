@@ -9,51 +9,14 @@ import {
   parseCardInfo
 } from './promptGen.util'
 import cards from '../../../tool/cards.collectible.json'
-import { HearthstoneCard } from '../types'
+import {
+  Card,
+  CardError,
+  CardMetadata,
+  DeckPromptOutput,
+  HearthstoneCard
+} from '../types'
 const CardDB = cards as HearthstoneCard[]
-interface DeckStreamResultMap {
-  card: CardMetadata
-  complete: DeckPromptOutput
-  error: CardError
-}
-
-type DeckStreamResultBase<T extends keyof DeckStreamResultMap> = {
-  type: T
-  data: DeckStreamResultMap[T]
-  cardName?: string
-  error?: string
-}
-
-export type DeckStreamResult = {
-  [T in keyof DeckStreamResultMap]: DeckStreamResultBase<T>
-}[keyof DeckStreamResultMap]
-export interface CardMetadata {
-  cardName: string
-  count: number
-  stats: {
-    Description: string
-    Cost: string
-    Attack?: string
-    Health?: string
-    Durability?: string
-    'Card type': string
-    Class?: string
-    Runes?: string
-    Rarity?: string
-  }
-}
-export interface CardError {
-  cardName: string
-  error: string
-}
-export type Card = CardMetadata | CardError
-
-export type DeckPromptOutput = {
-  promptString: string
-  enrichedCards: Card[]
-  manaCurveAnalysis: string
-}
-
 const prefix = `Keyword explanation:
 <b>Battlecry</b><br>Does something when you play it from your hand.
 <b>Combo</b><br>A bonus if you already played a card this turn.

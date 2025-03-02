@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useState, useEffect } from "react";
-import { DeckStreamResult, Card as HsCard } from "./api/promptGen";
+import { DeckStreamResult } from './types';
+import { Card as HsCard } from './types';
 import renderDeckEvaluator from "./renderDeckEvaluator";
 import useDeckChat from "./deckChatService";
 import { doEventStream } from "./lib/sse/sse-client";
@@ -126,8 +127,9 @@ const HearthstoneDeckEvaluator = () => {
                 .filter(
                   (item) =>
                     item.CardDetails.Class.toLowerCase() ===
-                      deckCode.match(/# Class: (\w+)/)?.[1].toLowerCase() ||
-                    item.CardDetails.Class.toLowerCase() === "neutral"
+                      deckCode.match(/# Class: (\w+)/)?.[1].toLowerCase() 
+                      || item.CardDetails.Class.toLowerCase() === "neutral"
+                      || item.CardDetails.Class.toLowerCase() === "INVALID".toLowerCase()
                 )
                 .map((item) => {
                   // eslint-disable-next-line @typescript-eslint/no-unused-vars

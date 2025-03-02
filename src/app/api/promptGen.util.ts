@@ -1,4 +1,4 @@
-import { Card, CardMetadata } from './promptGen'
+import { Card } from '../types'
 
 export function formatCardsHuman (cardLines: string[], enrichedCards: Card[]) {
   return cardLines.map(formatCardDetailsHuman(enrichedCards)).join('\n')
