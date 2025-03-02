@@ -1,4 +1,4 @@
-import { Card as HsCard } from "./api/promptGen";
+import { Card } from "./types";
 import { CollectionCard } from "./types";
 
 export function DeckCodeInputModal(props: {
@@ -9,11 +9,13 @@ export function DeckCodeInputModal(props: {
     deckCode: string;
     isParsing: boolean;
     errorMessage: string;
-    deckAnalysis: HsCard[];
+    deckAnalysis: Card[];
   };
   userRequestState: {
     userRequest: string;
     handleUserRequestChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    selectedModel: string; // Add selected model
+    handleModelChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; // Add handler for model change
   };
   handlers: {
     handleDeckCodeChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
@@ -81,6 +83,18 @@ export function DeckCodeInputModal(props: {
             className="w-full p-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             placeholder="What would you like to know about your deck? (Optional)"
           />
+
+          <label htmlFor="model-select" className="sr-only">Select Model</label>
+          <select
+            id="model-select"
+            value={userRequestState.selectedModel}
+            onChange={userRequestState.handleModelChange}
+            className="w-full p-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="deepseek-reasoner">DeepSeek Reasoner</option>
+            <option value="deepseek-coder">DeepSeek Coder</option>
+            <option value="deepseek-chat">DeepSeek Chat</option>
+          </select>
 
           <textarea
             value={deckState.deckCode}

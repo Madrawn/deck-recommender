@@ -87,3 +87,54 @@ export interface MinionCard extends HearthstoneCard {
 export interface SpellCard extends HearthstoneCard {
   type: 'SPELL'
 }
+export interface AppVersion {
+  FullSemVer: string
+  Major: number
+  Minor: number
+  Patch: number
+  CommitDate: string
+  Sha: string
+}
+export interface DeckStreamResultMap {
+  card: CardMetadata
+  complete: DeckPromptOutput
+  error: CardError
+}
+export interface CardMetadata {
+  cardName: string
+  count: number
+  stats: {
+    Description: string
+    Cost: string
+    Attack?: string
+    Health?: string
+    Durability?: string
+    'Card type': string
+    Class?: string
+    Runes?: string
+    Rarity?: string
+  }
+}
+export interface CardError {
+  cardName: string
+  error: string
+}
+export type Card = CardMetadata | CardError
+export type DeckPromptOutput = {
+  promptString: string
+  enrichedCards: Card[]
+  manaCurveAnalysis: string
+}
+export type DeckStreamResultBase<T extends keyof DeckStreamResultMap> = {
+  type: T
+  data: DeckStreamResultMap[T]
+  cardName?: string
+  error?: string
+}
+export type DeckStreamResult = {
+  [T in keyof DeckStreamResultMap]: DeckStreamResultBase<T>
+}[keyof DeckStreamResultMap]
+export type renderStateStepperProps = {
+  evaluationState: DeckEvaluationState
+  handlers: { handleResetMessages: () => void; handleOpenModal: () => void }
+}

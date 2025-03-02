@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useState, useEffect } from "react";
-import { DeckStreamResult, Card as HsCard } from "./api/promptGen";
+import { DeckStreamResult } from './types';
+import { Card as HsCard } from './types';
 import renderDeckEvaluator from "./renderDeckEvaluator";
 import useDeckChat from "./deckChatService";
 import { doEventStream } from "./lib/sse/sse-client";
@@ -20,6 +21,7 @@ const HearthstoneDeckEvaluator = () => {
     "Can you evaluate this deck and suggest improvements?"
   );
   const [collection, setCollection] = useState<CollectionCard[]>([]); // Add state for collection
+  const [selectedModel, setSelectedModel] = useState("deepseek-reasoner");
 
   // State tracking
   const [evaluationState, setEvaluationState] = useState<DeckEvaluationState>(
@@ -35,7 +37,7 @@ const HearthstoneDeckEvaluator = () => {
     handleSubmit: handleChatSubmit,
     stop,
     status,
-  } = useDeckChat();
+  } = useDeckChat(selectedModel);
 
   // Modal handlers
   const handleOpenModal = () => setIsModalOpen(true);
@@ -126,8 +128,9 @@ const HearthstoneDeckEvaluator = () => {
                 .filter(
                   (item) =>
                     item.CardDetails.Class.toLowerCase() ===
-                      deckCode.match(/# Class: (\w+)/)?.[1].toLowerCase() ||
-                    item.CardDetails.Class.toLowerCase() === "neutral"
+                      deckCode.match(/# Class: (\w+)/)?.[1].toLowerCase() 
+                      || item.CardDetails.Class.toLowerCase() === "neutral"
+                      || item.CardDetails.Class.toLowerCase() === "INVALID".toLowerCase()
                 )
                 .map((item) => {
                   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -178,6 +181,8 @@ const HearthstoneDeckEvaluator = () => {
     userRequestState: {
       userRequest,
       handleUserRequestChange: (e) => setUserRequest(e.target.value),
+      selectedModel, // Pass selected model
+      handleModelChange: (e) => setSelectedModel(e.target.value), // Add handler for model change
     },
     handlers: {
       handleDeckCodeChange,
