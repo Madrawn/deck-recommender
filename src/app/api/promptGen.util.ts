@@ -51,22 +51,22 @@ export function parseCardInfo (text: string) {
 
   return stats
 }
-export function computeTotalCardsAndCost (
-  cards: Card[],
-  curve: { [key: number]: number }
-) {
+export function computeTotalCardsAndCost (cards: Card[]) {
+  const curve: { [key: number]: number } = {}
+
   let totalCards = 0
   let totalCost = 0
   cards
     .filter(card => 'stats' in card)
+    .filter(card => "Cost" in card.stats)
     .forEach(({ stats, count }) => {
       const cost = parseInt(stats.Cost)
       const cardCount = count || 1
-      curve[cost] = cardCount
+      curve[cost] = (curve[cost] ?? 0) + cardCount
       totalCards += cardCount
       totalCost += cost * cardCount
     })
-  return { totalCards, totalCost }
+  return { totalCards, totalCost, curve }
 }
 export function buildCostBarGraph (
   maxCost: number,
@@ -84,8 +84,7 @@ export function buildCostBarGraph (
   )
 }
 export function calculateManaCurve (cards: Card[]) {
-  const curve: { [key: number]: number } = {}
-  const { totalCards, totalCost } = computeTotalCardsAndCost(cards, curve)
+  const { totalCards, totalCost, curve } = computeTotalCardsAndCost(cards)
 
   const maxCost = Math.max(...Object.keys(curve).map(Number))
   const averageCost = (totalCost / totalCards).toFixed(1)
