@@ -32,6 +32,8 @@ type DeckEvaluatorProps = {
   userRequestState: {
     userRequest: string;
     handleUserRequestChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    selectedModel: string; // Add selected model
+    handleModelChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; // Add handler for model change
   };
   handlers: {
     handleDeckCodeChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;

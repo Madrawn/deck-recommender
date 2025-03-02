@@ -10,9 +10,10 @@ const deepseek = createDeepSeek({
 })
 export async function POST (req: Request) {
   console.log('req', req)
-  const { messages } = await req.json()
+  const requestBody = await req.json()
+  const { messages, model } = requestBody; // Get model from request body
   const result = await streamText({
-    model: deepseek('deepseek-reasoner'),
+    model: deepseek(model), // Use selected model
     messages,
     temperature: 0.2
   })

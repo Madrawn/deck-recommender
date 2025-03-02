@@ -21,6 +21,7 @@ const HearthstoneDeckEvaluator = () => {
     "Can you evaluate this deck and suggest improvements?"
   );
   const [collection, setCollection] = useState<CollectionCard[]>([]); // Add state for collection
+  const [selectedModel, setSelectedModel] = useState("deepseek-reasoner");
 
   // State tracking
   const [evaluationState, setEvaluationState] = useState<DeckEvaluationState>(
@@ -36,7 +37,7 @@ const HearthstoneDeckEvaluator = () => {
     handleSubmit: handleChatSubmit,
     stop,
     status,
-  } = useDeckChat();
+  } = useDeckChat(selectedModel);
 
   // Modal handlers
   const handleOpenModal = () => setIsModalOpen(true);
@@ -180,6 +181,8 @@ const HearthstoneDeckEvaluator = () => {
     userRequestState: {
       userRequest,
       handleUserRequestChange: (e) => setUserRequest(e.target.value),
+      selectedModel, // Pass selected model
+      handleModelChange: (e) => setSelectedModel(e.target.value), // Add handler for model change
     },
     handlers: {
       handleDeckCodeChange,
