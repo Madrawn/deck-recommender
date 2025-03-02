@@ -109,22 +109,7 @@ export default function generatePromptFromDeck (
   // # 1x (7) Kerrigan
   // `;
 
-  const curveData = calculateManaCurve(
-    cardLines.map(line => ({
-      line,
-      stats: (() => {
-        const foundCard = enrichedCards.find(
-          c => c.cardName === line.match(/\(\d+\)\s(.*)$/)?.[1].trim()
-        )
-        if (foundCard && 'stats' in foundCard) {
-          // Type guard using 'in' operator
-          return foundCard.stats as Pick<CardMetadata['stats'], 'Cost'> // Type assertion for clarity
-        } else {
-          return { Cost: '' } // Or handle the error case as needed, e.g., return an empty stats object
-        }
-      })()
-    }))
-  )
+  const curveData = calculateManaCurve(enrichedCards.filter(x => 'stats' in x))
   // Generate enriched output
   const explanations = Object.entries(prefix)
     .filter(([keyword]) =>

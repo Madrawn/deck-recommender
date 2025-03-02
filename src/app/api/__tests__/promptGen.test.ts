@@ -10,11 +10,11 @@ import generatePromptFromDeck, { Card } from '../promptGen'
 describe('Mana Curve Calculations', () => {
   test('should calculate basic curve', () => {
     const cards = [
-      { line: '2x (1) Arcane Missiles', stats: { Cost: '1' } },
-      { line: '1x (3) Frost Nova', stats: { Cost: '3' } }
+      { count: 2,stats: { Cost: '1' } },
+      { count: 1, stats: { Cost: '3' } }
     ]
 
-    const result = calculateManaCurve(cards)
+    const result = calculateManaCurve((cards as unknown) as Card[])
     expect(result.average).toBe(((2 * 1 + 1 * 3) / 3).toFixed(1))
     expect(result.chart).toContain('1: ■■ (2)')
   })
@@ -34,6 +34,7 @@ describe('Card Formatting For Humans', () => {
   const enrichedCards: Card[] = [
     {
       cardName: 'Arcane Intellect',
+      count: 2,
       stats: {
         Cost: '3',
         Description: 'Draw 2 cards',
@@ -91,6 +92,7 @@ describe('Card Formatting For Json', () => {
   const enrichedCards: Card[] = [
     {
       cardName: 'Arcane Intellect',
+      count: 2,
       stats: {
         Cost: '3',
         Description: 'Draw 2 cards',
@@ -111,7 +113,7 @@ describe('Card Formatting For Json', () => {
     ]
     const formatted = formatCardsJson(line, enrichedCards)
     expect(formatted).toBe(
-      '[{"cardName":"Arcane Intellect","stats":{"Cost":"3","Description":"Draw 2 cards","Card type":"Spell"}},{"cardName":"Corrupted Card","error":"Invalid data format"}]'
+      '[{"cardName":"Arcane Intellect","count":2,"stats":{"Cost":"3","Description":"Draw 2 cards","Card type":"Spell"}},{"cardName":"Corrupted Card","error":"Invalid data format"}]'
     )
   })
 })
@@ -120,6 +122,7 @@ describe('Card Formatting Full', () => {
   const enrichedCards: Card[] = [
     {
       cardName: 'Arcane Intellect',
+      count: 2,
       stats: {
         Cost: '3',
         Description: 'Draw 2 cards',
@@ -151,6 +154,7 @@ describe('Card Formatting Full', () => {
       enrichedCards: [
         {
           cardName: 'Arcane Intellect',
+          count: 2,
           stats: {
             'Card type': 'Spell',
             Cost: '3',
@@ -160,10 +164,10 @@ describe('Card Formatting Full', () => {
         { cardName: 'Corrupted Card', error: 'Invalid data format' }
       ],
       manaCurveAnalysis: `# MANA CURVE ANALYSIS
-# Average Cost: 1.5
+# Average Cost: 3.0
 # Highest Cost: 3
 # Curve Distribution:
-#  0: ■■ (2)
+#  0:  (0)
 #  1:  (0)
 #  2:  (0)
 #  3: ■■ (2)`,
@@ -175,10 +179,10 @@ describe('Card Formatting Full', () => {
 # Year of the Pegasus
 #
 # MANA CURVE ANALYSIS
-# Average Cost: 1.5
+# Average Cost: 3.0
 # Highest Cost: 3
 # Curve Distribution:
-#  0: ■■ (2)
+#  0:  (0)
 #  1:  (0)
 #  2:  (0)
 #  3: ■■ (2)
@@ -201,6 +205,7 @@ describe('Card Formatting Full', () => {
       enrichedCards: [
         {
           cardName: 'Arcane Intellect',
+          count: 2,
           stats: {
             'Card type': 'Spell',
             Cost: '3',
@@ -210,10 +215,10 @@ describe('Card Formatting Full', () => {
         { cardName: 'Corrupted Card', error: 'Invalid data format' }
       ],
       manaCurveAnalysis: `# MANA CURVE ANALYSIS
-# Average Cost: 1.5
+# Average Cost: 3.0
 # Highest Cost: 3
 # Curve Distribution:
-#  0: ■■ (2)
+#  0:  (0)
 #  1:  (0)
 #  2:  (0)
 #  3: ■■ (2)`,
@@ -225,10 +230,10 @@ describe('Card Formatting Full', () => {
 # Year of the Pegasus
 #
 # MANA CURVE ANALYSIS
-# Average Cost: 1.5
+# Average Cost: 3.0
 # Highest Cost: 3
 # Curve Distribution:
-#  0: ■■ (2)
+#  0:  (0)
 #  1:  (0)
 #  2:  (0)
 #  3: ■■ (2)
