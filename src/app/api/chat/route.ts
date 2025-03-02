@@ -15,7 +15,7 @@ export async function POST (req: Request) {
   const result = await streamText({
     model: deepseek(model), // Use selected model
     messages,
-    temperature: 0.2
+    topP: 0.7,
   })
   result.warnings.then(warnings => {
     console.log('warnings', warnings)
