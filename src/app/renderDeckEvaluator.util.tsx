@@ -36,7 +36,7 @@ export const renderCardPlaceholder = (card: Card) => {
             {card.stats.Cost}
           </div>
           <div className="absolute bottom-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-white font-bold bg-gray-700">
-            {card.count}
+            x{card.count}
           </div>
         </div>
         <div className="text-center">
